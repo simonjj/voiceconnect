@@ -22,20 +22,26 @@ services/
   tts/                  Kokoro TTS (FastAPI, GPU, float32 PCM @ 24 kHz)
   agents/sandbox/       Generic agent that proxies /chat → sandbox `copilot` CLI
 infra/
-  main.bicep            All Azure resources (env, GPU CAs, server, agent CAs)
-  agent.bicep           Per-agent Container App module
-  acr-role.bicep        AcrPull role assignment for the user-assigned MI
-  deploy-phase2.ps1     One-shot end-to-end deploy
+  main.bicep              Standard-env Azure resources (env, GPU CAs, server, sandbox group)
+  express.bicep           Express-env Azure resources (per-agent agent apps in WCUS)
+  acr-role.bicep          AcrPull role assignment for the user-assigned MI (standard env only)
+  sandbox-bootstrap.sh    Installs the HTTP wrapper + systemd unit inside a fresh sandbox
+  deploy.ps1              One-shot end-to-end (re)deploy
 Dockerfile              connect-server image (builds client and bundles dist/)
 docker-compose.yml      Local dev (without sandboxes)
 ```
 
 ## Architecture highlights
 
-- **Sandbox-per-agent.** Each persona gets a dedicated ACA Sandbox provisioned
-  via `aca sandbox create --disk copilot`. The agent Container App holds the
-  sandbox id in env and proxies HTTP `/chat` calls to `aca sandbox exec -c
-  "copilot -p \"$P\" --allow-all-tools --output-format json"`.
+- **Sandbox-per-agent.** Each persona gets a dedicated ACA Sandbox in a
+  sandbox group. A small HTTP wrapper (`services/agents/sandbox/sandbox_wrapper.py`)
+  runs inside the sandbox under systemd, exposing `/chat` and `/health` on
+  port 8080. The agent container app calls the wrapper over HTTPS via the
+  per-sandbox `adcproxy.io` URL.
+- **Agents on ACA Express.** The two agent container apps live in an Express
+  environment in West Central US (Express isn't available in Sweden Central).
+  Express envs have no managed identity, no internal ingress, and no GPU —
+  fine for these small CPU-only HTTP forwarders.
 - **Streaming reply parsing.** The agent reads the Copilot CLI JSONL output and
   emits an NDJSON `{type:"text",content}` event when it sees an
   `assistant.message`. `assistant.message_delta` events are ignored to avoid
@@ -65,31 +71,47 @@ Prereqs:
 - `gh` CLI logged in (we source `gh auth token` for Copilot CLI inside sandboxes).
 - An ACR you can push to. The default is `simon.azurecr.io`.
 
-One command:
+### Fresh deploy
 
 ```powershell
 cd infra
-.\deploy-phase2.ps1
-# optional flags:
-#   -ResourceGroup voiceconnect-3      # re-deploy onto an existing RG
-#   -SkipImageBuild                   # reuse current images
-#   -SkipSandboxProvisioning          # reuse existing sandboxes
+.\deploy.ps1
+# Useful flags:
+#   -ResourceGroupPrefix voiceconnect    # creates voiceconnect-N + voiceconnect-express-N
+#   -ImageTag latest                     # tag to build/deploy
+#   -SkipImageBuild                      # reuse images already in ACR
 ```
 
 The script:
 
-1. Creates the next `voiceconnect-N` resource group (or uses `-ResourceGroup`).
-2. Builds & pushes `connect-server` and `connect-sandbox-agent` images via ACR
-   tasks. (STT and TTS images are expected to already be in the registry; their
-   Dockerfiles are under `services/stt` and `services/tts` if you need to
-   rebuild them.)
-3. Creates an ACA Sandbox group and one sandbox per agent.
-4. Runs `infra/main.bicep` to deploy the env, two GPU services, the server, and
-   one Container App per agent.
-5. Grants the user-assigned MI the *Container Apps SandboxGroup Data Owner*
-   role on the sandbox group, then restarts agents so they pick it up.
-6. Registers each agent with the server's `/api/agents` endpoint.
-7. Prints `https://<server>?token=dev-token` to open in Chrome.
+1. Picks the next free `voiceconnect-N` (and `voiceconnect-express-N`) RGs.
+2. Builds and pushes `connect-server`, `connect-sandbox-agent`, `connect-stt`,
+   `connect-tts` via ACR tasks (unless `-SkipImageBuild`).
+3. Deploys `main.bicep` → standard env, server, STT, TTS, and the sandbox group.
+4. For each agent, either restores a sandbox from a snapshot (when
+   `-AriaSnapshot` / `-NovaSnapshot` are passed) or creates a fresh sandbox and
+   runs `sandbox-bootstrap.sh` to install the HTTP wrapper.
+5. Opens port 8080 anonymously on each sandbox and pins auto-suspend to 1 year
+   (so the demo doesn't get suspended mid-conversation).
+6. Deploys `express.bicep` to the Express RG with the freshly-minted sandbox
+   URLs baked into each agent's env.
+7. Registers each agent with the server's `/api/agents` endpoint.
+8. Prints `https://<server>?token=dev-token` to open in Chrome.
+
+### Redeploy a captured demo from snapshots
+
+```powershell
+./infra/deploy.ps1 `
+  -ImageTag demo-2026-05-28 `
+  -AriaSnapshot aria-demo-2026-05-28 `
+  -NovaSnapshot nova-demo-2026-05-28 `
+  -SkipImageBuild
+```
+
+Snapshots freeze the sandbox disk (Copilot CLI install, wrapper, systemd
+unit, env file). Combined with the dated `connect-*:demo-2026-05-28` ACR
+tags, this gets the exact captured demo back online from scratch in one
+command. See `secrets.template.env` for the full list of overridable values.
 
 ## Local dev
 
@@ -130,4 +152,4 @@ diagnosing playback vs. transport issues.
 - Round-robin and broadcast modes work but haven't been tuned for long
   multi-turn conversations.
 - Only Aria and Nova ship today; adding Pip / Vox / etc. is just another entry
-  in the `agents` array of `deploy-phase2.ps1` and `main.bicep`.
+  in the `agentSpecs` array of `infra/deploy.ps1`.

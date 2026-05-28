@@ -17,37 +17,8 @@ param imageTag string = 'latest'
 @secure()
 param authToken string = 'dev-token'
 
-@description('Sandbox group name (must already exist in this RG).')
-param sandboxGroup string = 'voiceconnect-sb'
-
-@description('Sandbox group region.')
-param sandboxRegion string = 'swedencentral'
-
-@description('GitHub token used by Copilot CLI inside agent sandboxes. Optional but recommended.')
-@secure()
-param githubToken string = ''
-
-@description('List of agent personas to deploy. Each gets its own Container App + dedicated sandbox.')
-param agents array = [
-  {
-    id: 'aria'
-    name: 'Aria'
-    voice: 'af_sky'
-    color: '#3b82f6'
-    persona: 'You are Aria, a warm and curious voice assistant who likes to ask clarifying questions and keep the conversation flowing.'
-    model: ''
-    sandboxId: ''
-  }
-  {
-    id: 'nova'
-    name: 'Nova'
-    voice: 'am_adam'
-    color: '#ec4899'
-    persona: 'You are Nova, a concise and witty voice assistant who gets to the point quickly and offers a different angle than the other agents.'
-    model: ''
-    sandboxId: ''
-  }
-]
+@description('Sandbox group name (created in this RG).')
+param sandboxGroupName string = 'voiceconnect-sb'
 
 var tags = {
   app: 'voiceconnect'
@@ -222,32 +193,15 @@ resource ttsApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
   }
 }
 
-// ───────────────────────── Sandbox Agents (CPU) ─────────────────────────
-module agentApps 'agent.bicep' = [for agent in agents: {
-  name: 'agent-${agent.id}'
-  dependsOn: [ acrRole ]
-  params: {
-    namePrefix: namePrefix
-    location: location
-    environmentId: cae.id
-    uamiId: uami.id
-    uamiClientId: uami.properties.clientId
-    acrLoginServer: acrLoginServer
-    imageTag: imageTag
-    agentId: agent.id
-    agentName: agent.name
-    agentVoice: agent.voice
-    agentColor: agent.color
-    agentPersona: agent.persona
-    agentModel: agent.model
-    sandboxId: agent.sandboxId
-    sandboxGroup: sandboxGroup
-    sandboxRegion: sandboxRegion
-    sandboxSubscription: subscription().subscriptionId
-    sandboxResourceGroup: resourceGroup().name
-    githubToken: githubToken
-  }
-}]
+// ───────────────────────── Sandbox Group ─────────────────────────
+// Hosts the per-agent Copilot CLI sandboxes. Sandboxes themselves are
+// created via the `aca` CLI in deploy.ps1 (data-plane) — only the group
+// is declared here.
+resource sandboxGroup 'Microsoft.App/sandboxGroups@2026-02-01-preview' = {
+  name: sandboxGroupName
+  location: location
+  tags: tags
+}
 
 // ───────────────────────── Server (CPU, public) ─────────────────────────
 resource serverApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
@@ -311,8 +265,4 @@ output ttsFqdn string = ttsApp.properties.configuration.ingress.fqdn
 output environmentName string = cae.name
 output identityClientId string = uami.properties.clientId
 output identityPrincipalId string = uami.properties.principalId
-output agentFqdns array = [for (agent, i) in agents: {
-  id: agent.id
-  name: agent.name
-  fqdn: agentApps[i].outputs.fqdn
-}]
+output sandboxGroupName string = sandboxGroup.name

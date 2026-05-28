@@ -1,60 +1,39 @@
-# Azure Deployment — VoiceConnect on ACA Serverless GPU
+# Infra
 
-## What this deploys
-- **Resource Group**: `voiceconnect-N` (auto-incremented) in **swedencentral**
-- **ACA Environment** with two workload profiles:
-  - `Consumption` (CPU) — server, claude
-  - `gpu-t4` (Consumption-GPU-NC8as-T4) — stt, tts
-- **4 Container Apps**:
-  - `voiceconnect-server` (public ingress :3000) — TS server + React SPA
-  - `voiceconnect-claude` (internal :8010) — Anthropic Claude proxy
-  - `voiceconnect-stt`    (internal :8001, GPU) — Whisper large-v3 + Silero VAD
-  - `voiceconnect-tts`    (internal :8002, GPU) — Kokoro-82M
-- **User-assigned MI** with `AcrPull` on `simon.azurecr.io`
-- **Log Analytics** workspace for diagnostics
+The full story is in the [top-level README](../README.md#deploy-to-azure).
+Quick reference for what's in this directory:
 
-Images are pulled from `simon.azurecr.io/connect-{server,claude,stt,tts}:latest`.
+| File | Role |
+| --- | --- |
+| `main.bicep` | Standard-env (Sweden Central): managed env, server, STT (GPU), TTS (GPU), UAMI, sandbox group. |
+| `express.bicep` | Express-env (West Central US): one container app per agent, fed the per-sandbox `adcproxy.io` URL. |
+| `acr-role.bicep` | Grants AcrPull to the UAMI on the existing `simon` ACR (cross-RG). Used by `main.bicep` only. |
+| `sandbox-bootstrap.sh` | Idempotent: lays down `/opt/sandbox_wrapper.py`, systemd unit, and the GH-token env file inside a sandbox. Run by `deploy.ps1` when no snapshot is provided. |
+| `deploy.ps1` | One-shot orchestrator. RGs → ACR builds → main → sandboxes (snapshot or bootstrap) → express → agent registration. |
 
-## Files
-- `main.bicep`     — main template
-- `acr-role.bicep` — module that grants AcrPull on the (cross-RG) ACR
-- `deploy.ps1`     — one-shot deploy script
+## Express environment notes
 
-## Deploy
+- `environmentMode: 'Express'` is set in `express.bicep`; Bicep can't yet
+  validate this property so we suppress `BCP037` there.
+- Only `westcentralus` and `eastasia` are supported by Express today.
+- Express envs have **no managed identity** support, so `express.bicep` pulls
+  images using the ACR admin user/password. `deploy.ps1` enables admin on the
+  ACR and feeds the creds to the deployment.
+- Express envs reject `--secrets` passed at create time; the bicep template
+  declares them on the container app itself, which works.
 
-```powershell
-cd infra
-.\deploy.ps1 -AnthropicApiKey 'sk-ant-...'
+## Sandbox snapshots
+
+Snapshots live in the same sandbox group. The captured demo uses:
+
+```
+aca --sandbox-group voiceconnect-sb sandbox snapshot --id <agent-sandbox-id> --name aria-demo-YYYY-MM-DD
 ```
 
-Or manually:
+Restore via:
 
-```powershell
-$rg = 'voiceconnect-1'
-az group create -n $rg -l swedencentral
-$acrId = az acr show -n simon -g simonj --query id -o tsv
-az deployment group create -g $rg -f main.bicep `
-  -p acrResourceId=$acrId anthropicApiKey='sk-ant-...' authToken='dev-token'
+```
+aca --sandbox-group voiceconnect-sb sandbox create --label agent-id=aria --snapshot aria-demo-YYYY-MM-DD
 ```
 
-After deploy, register the Claude agent with the server (deploy.ps1 does this automatically):
-
-```powershell
-$body = @{ id='claude-sonnet'; name='Claude'; url="https://$claudeFqdn"; voice_id='af_sky' } | ConvertTo-Json
-Invoke-RestMethod -Uri "$serverUrl/api/agents" -Method POST -Body $body -ContentType 'application/json'
-```
-
-## Verify
-
-```powershell
-curl https://<serverUrl>/api/health     # {"status":"ok",...}
-curl https://<serverUrl>/api/agents     # [{ Claude agent... }]
-```
-
-Then open the server URL in Chrome and click the Claude agent.
-
-## Notes
-- **Cold-start**: GPU apps download models on first launch (~3GB Whisper, ~80MB Kokoro). Startup probe allows ~20 minutes.
-- **minReplicas=1** keeps GPU containers warm (cost!). Drop to 0 if you want scale-to-zero (will reload models on next request).
-- **Cross-region pull**: ACR is in `westus`, ACA in `swedencentral`. First pull is slower; subsequent pulls cached at edge.
-- To rotate the Anthropic key: `az containerapp secret set -g <rg> -n voiceconnect-claude --secrets anthropic-api-key=sk-ant-... && az containerapp update -g <rg> -n voiceconnect-claude` (forces new revision).
+The `deploy.ps1 -AriaSnapshot ... -NovaSnapshot ...` flags wrap this.
