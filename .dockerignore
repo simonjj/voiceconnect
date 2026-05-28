@@ -1,0 +1,9 @@
+workspace/
+services/
+.env
+*.md
+*.tar.gz
+node_modules/
+**/node_modules/
+__pycache__/
+.git/

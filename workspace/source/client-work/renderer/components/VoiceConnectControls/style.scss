@@ -1,0 +1,69 @@
+.Control {
+    display: none;
+    opacity: 0;
+    position: absolute;
+    top: -20%;
+    left: -50%;
+    box-sizing: border-box;
+    width: 105px;
+    padding: 10px;
+    border-top: 5px solid var(--member-active-color);
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: left;
+    color: white;
+    background-color: dimgray;
+    transition: opacity 0.2s linear;
+
+    &__label {
+        text-overflow: ellipsis;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    &__input {
+        -webkit-appearance: none;
+        margin: 10px 0 -5px;
+        width: -webkit-fill-available;
+        cursor: grab;
+
+        &::-webkit-slider-runnable-track {
+            height: 4px;
+            background: white;
+            border-radius: 3px;
+        }
+
+        &::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            background: white;
+            border-radius: 50%;
+            height: 12px;
+            width: 12px;
+            margin-top: -4px;
+        }
+
+        &:active {
+            cursor: grabbing;
+        }
+
+        &:focus {
+            outline: none;
+        }
+    }
+
+    &__options {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-top: 15px;
+    }
+
+    &__icon.Control__icon {
+        transform: none;
+    }
+
+    &__option {
+        cursor: pointer;
+    }
+}

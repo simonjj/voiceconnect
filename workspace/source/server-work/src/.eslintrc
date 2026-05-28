@@ -1,0 +1,19 @@
+{
+    "extends": [
+        "@touchto/eslint-config/node"
+    ],
+    "overrides": [
+        {
+            "files": [
+                "*.test.js"
+            ],
+            "env": {
+                "node": true,
+                "jest": true
+            },
+            "globals": {
+                "container": "readonly"
+            }
+        }
+    ]
+}

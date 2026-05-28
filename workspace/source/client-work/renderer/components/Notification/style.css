@@ -1,0 +1,28 @@
+.device-error {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.stack {
+    background-color: #dddddd;
+    padding: 5px;
+}
+
+div > :first-child {
+    margin-top: 0;
+}
+
+.buttonBar {
+    position: fixed;
+    bottom: $gutter;
+    right: $gutter;
+    left: $gutter;
+    display: flex;
+    justify-content: space-between;
+}
+
+.notification-view {
+    margin-bottom: 64px;
+}

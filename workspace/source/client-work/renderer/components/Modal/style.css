@@ -1,0 +1,11 @@
+.modal-container {
+    background-color: grey;
+    border-radius: 5px;
+    color: white;
+    font-size: 12px;
+    padding: 5px;
+
+    div {
+        padding: 5px 0;
+    }
+}

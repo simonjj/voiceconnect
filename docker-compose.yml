@@ -1,0 +1,78 @@
+# Connect — Full Stack
+# GPU services need: docker compose --profile gpu up
+# CPU-only (server + agent): docker compose up
+
+services:
+  # ── Connect Server (TS) + Client static files ──
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - AUTH_TOKEN=${AUTH_TOKEN:-dev-token}
+      - STT_URL=ws://stt:8001
+      - TTS_URL=http://tts:8002
+      - PORT=3000
+    depends_on:
+      - stt
+      - tts
+    restart: unless-stopped
+
+  # ── STT Service (GPU) ──
+  stt:
+    build:
+      context: ./services/stt
+    profiles: ["gpu"]
+    ports:
+      - "8001:8001"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # Cache HuggingFace models across rebuilds
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+      - torch-cache:/root/.cache/torch
+    restart: unless-stopped
+
+  # ── TTS Service (GPU) ──
+  tts:
+    build:
+      context: ./services/tts
+    profiles: ["gpu"]
+    ports:
+      - "8002:8002"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+    restart: unless-stopped
+
+  # ── Claude Agent (CPU — just an API proxy) ──
+  claude:
+    build:
+      context: ./services/agents/claude
+    ports:
+      - "8010:8010"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - AGENT_ID=claude-sonnet
+      - AGENT_NAME=Claude
+      - AGENT_VOICE=af_sky
+      - CLAUDE_MODEL=claude-sonnet-4-20250514
+      - PORT=8010
+    restart: unless-stopped
+
+volumes:
+  hf-cache:
+  torch-cache:

@@ -1,0 +1,49 @@
+.kbd {
+    display: inline-block;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 0.1em 0.5em;
+    margin: 0 0.2em;
+    box-shadow: 0 1px 0px rgba(0, 0, 0, 0.2), 0 0 0 2px #fff inset;
+    background-color: #f7f7f7;
+}
+
+.styled-combo {
+    margin: 10px 0;
+}
+
+.styled-combo-plus {
+    padding: 5px;
+}
+
+.c-hotkey {
+    &__clear.MuiButton-root {
+        min-width: auto;
+        margin-left: calc($gutter / 2);
+        color: rgb($material-primary);
+    }
+}
+
+.c-hotkey--edit {
+    position: relative;
+
+    .mdl-textfield {
+        width: auto;
+        padding-top: 7px;
+    }
+
+    .MuiFormHelperText-root {
+        font-size: 0.85rem;
+    }
+
+    .c-hotkey__input {
+        position: absolute;
+        top: 0;
+    }
+}
+
+.c-hotkey--current {
+    .c-hotkey__input {
+        margin-right: $gutter;
+    }
+}

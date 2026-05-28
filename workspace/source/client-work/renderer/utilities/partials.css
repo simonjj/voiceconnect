@@ -1,0 +1,23 @@
+%center-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+%user__image--desk {
+    display: block;
+    width: 100%;
+    height: fit-content;
+    /* demo only */
+    max-height: 200px;
+}
+
+%user__avatar--desk {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 75px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}

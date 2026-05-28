@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  app-server:
+    deploy:
+      replicas: 3
+      placement:
+        max_replicas_per_node: 1
+        constraints:
+          - node.role == worker
+      restart_policy:
+        condition: unless-stopped
+  mongo:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: unless-stopped
+  kafka:
+    deploy:
+      mode: replicated
+      replicas: 3
+      placement:
+        max_replicas_per_node: 1
+        constraints:
+          - node.role == worker
+      restart_policy:
+        condition: unless-stopped
+  zookeeper:
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        max_replicas_per_node: 1
+        constraints:
+          - node.role == worker
+      restart_policy:
+        condition: unless-stopped

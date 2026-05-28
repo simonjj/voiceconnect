@@ -1,0 +1,176 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    font-family: 'Roboto', 'Helvetica', sans-serif;
+}
+
+h1,
+h2,
+h3 {
+    font-family: Raleway, 'Helvetica Neue', Helvetica, Roboto, Arial, sans-serif;
+    font-weight: 600;
+    font-style: normal;
+    color: #333;
+    text-rendering: optimizeLegibility;
+    margin-top: 0;
+    margin-bottom: 1.0714285714rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    line-height: 1.4;
+}
+
+h3 {
+    font-size: 1.1428571429rem;
+}
+
+a {
+    color: #f9ce06;
+    -moz-transition-duration: 0.3s;
+    -o-transition-duration: 0.3s;
+    -webkit-transition-duration: 0.3s;
+    transition-duration: 0.3s;
+    text-decoration: none;
+    line-height: inherit;
+}
+
+.container {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-rows: 3rem 10rem 1fr;
+    padding: 2rem;
+}
+
+.logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.logo img {
+    width: 40px;
+    height: 40px;
+}
+
+.logo span {
+    font-size: 1.5rem;
+    margin-left: 0.5rem;
+    font-weight: 800;
+}
+
+.description {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.description h1 {
+    margin-bottom: 0;
+}
+
+.description span {
+    margin-top: 0.5rem;
+    font-size: 1.2rem;
+}
+
+.download {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.download h2 {
+    margin-bottom: 1.5rem;
+    color: #f9ce06;
+}
+
+.builds {
+    display: flex;
+    width: 100%;
+}
+
+.builds-card {
+    width: 33.3%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.builds-card .icon-link {
+    text-align: center;
+}
+
+.builds-card .button-link {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #fff;
+    background: #f9ce06;
+    border: 2px solid #f9ce06;
+    cursor: pointer;
+    font-family: Raleway, 'Helvetica Neue', Helvetica, Roboto, Arial, sans-serif;
+    font-weight: normal;
+    line-height: normal;
+    margin: 0 0 1.4285714286rem;
+    position: relative;
+    text-decoration: none;
+    text-align: center;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    border-radius: 0;
+    display: inline-block;
+    padding-top: 0.8571428571rem;
+    padding-right: 1.7142857143rem;
+    padding-bottom: 0.9285714286rem;
+    padding-left: 1.7142857143rem;
+    font-size: 1.1428571429rem;
+    transition: background-color 300ms ease-out;
+}
+
+.builds-card:hover .button-link {
+    background-color: rgba(249, 206, 6, 0.8);
+}
+
+.builds-card i {
+    box-sizing: content-box;
+    margin-bottom: 2.5rem;
+    font-size: 3.42857rem;
+    width: 3.42857rem;
+    height: 3.42857rem;
+    color: #333;
+    border: 3px solid #eee;
+    display: inline-block;
+    padding: 30px;
+    -moz-border-radius: 50%;
+    -webkit-border-radius: 50%;
+    border-radius: 50%;
+    background: none;
+    -moz-transition: color 0.2s linear;
+    -o-transition: color 0.2s linear;
+    -webkit-transition: color 0.2s linear;
+    transition: color 0.2s linear;
+}
+
+.builds-card:hover i {
+    color: #f9ce06;
+    cursor: pointer;
+}
+
+.builds-card p {
+    font-family: inherit;
+    font-weight: normal;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 1.4285714286rem;
+    text-rendering: optimizeLegibility;
+}
+
+.builds-card p a:hover {
+    color: #999;
+}

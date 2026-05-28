@@ -1,0 +1,15 @@
+[Unit]
+Description=VoiceConnect sandbox HTTP wrapper
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/sandbox_wrapper.py
+Restart=always
+RestartSec=2
+Environment=WRAPPER_PORT=8080
+StandardOutput=append:/var/log/sandbox_wrapper.log
+StandardError=append:/var/log/sandbox_wrapper.log
+
+[Install]
+WantedBy=multi-user.target

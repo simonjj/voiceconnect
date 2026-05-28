@@ -1,0 +1,37 @@
+.Tutorial-modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: #000;
+    border-radius: 0.83rem;
+    display: flex;
+    flex-direction: column;
+    color: #fff;
+    padding: 15px;
+    min-height: 5rem;
+    line-height: unset;
+
+    &__title,
+    &__content {
+        width: 100%;
+        text-align: center;
+    }
+
+    &__content {
+        margin: 15px 0;
+    }
+
+    &__actions {
+        display: flex;
+        justify-content: space-between;
+
+        & button {
+            color: #fff;
+
+            & span {
+                pointer-events: none;
+            }
+        }
+    }
+}

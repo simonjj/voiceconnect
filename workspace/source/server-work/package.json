@@ -1,0 +1,82 @@
+{
+  "name": "@touchto/connect-server",
+  "version": "1.0.0-0",
+  "description": "Touch To CONNECT - Video platform",
+  "main": "src/index",
+  "scripts": {
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "posttest": "eslint .",
+    "start": "docker-compose -f docker-compose.yml -f docker-compose.development.yml run --service-ports app-server",
+    "stop": "docker-compose -f docker-compose.yml -f docker-compose.development.yml stop",
+    "down": "docker-compose -f docker-compose.yml -f docker-compose.development.yml down",
+    "server:dev": "NODE_ENV=${NODE_ENV:=development} nodemon --watch src/ --inspect=0.0.0.0:9229",
+    "start:stage": "NODE_ENV=stage node src/index",
+    "logs": "docker-compose -f docker-compose.yml -f docker-compose.development.yml logs -f",
+    "compose": "docker-compose -f docker-compose.yml -f docker-compose.development.yml",
+    "server": "DEBUG=ttc* NODE_ENV=${NODE_ENV:=test} nodemon --watch src/",
+    "docker:build": "export TAG=\"${npm_package_name#@}\" && docker build --rm -t \"${TAG}\" --build-arg APP=\"${TAG}\" .",
+    "docker:save": "export TAG=\"${npm_package_name#@}\" && docker save --output image.tar ${TAG}:latest",
+    "pre-commit": "pretty-quick --staged;",
+    "exec": "docker exec -it $(docker ps -qf name=connect_app*)",
+    "kcat": "kcat",
+    "kafka:producer": "npm run exec -- npm run kcat -- -P -b kafka:9092",
+    "kafka:consumer": "docker exec -it $(docker ps -qf name=connect_app*) npm run kcat -- -C -b kafka:9092"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@bitbucket.org/touchto/connect.git"
+  },
+  "keywords": [
+    "video",
+    "node",
+    "react",
+    "WebRTC"
+  ],
+  "author": "Aaron Upshaw <aaron@touchto.io>",
+  "license": "Unlicense",
+  "homepage": "https://bitbucket.org/touchto/connect#readme",
+  "browserslist": [
+    "chrome>60"
+  ],
+  "dependencies": {
+    "@touchto/dev-config": "^1.0.3",
+    "@touchto/kcat": "^1.0.2",
+    "body-parser": "^1.19.0",
+    "bufferutil": "^4.0.1",
+    "config": "^3.3.1",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "express-jwt": "^6.0.0",
+    "helmet": "^3.23.1",
+    "jwks-rsa": "^1.8.1",
+    "jwt-decode": "^2.2.0",
+    "kafkajs": "^1.12.0",
+    "mongoose": "^5.9.7",
+    "morgan": "^1.10.0",
+    "shortid": "^2.2.15",
+    "superagent": "^5.3.1",
+    "utf-8-validate": "^5.0.2",
+    "uuid": "^7.0.3",
+    "winston": "^3.3.3"
+  },
+  "devDependencies": {
+    "@shelf/jest-mongodb": "^1.1.5",
+    "jest": "^26.1.0",
+    "nodemon": "^2.0.2"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run pre-commit",
+      "pre-push": "npm test"
+    }
+  },
+  "optionalDependencies": {
+    "@touchto/kcat": "^1.0.2",
+    "bufferutil": "^4.0.1",
+    "utf-8-validate": "^5.0.2"
+  },
+  "directories": {
+    "test": "tests"
+  }
+}

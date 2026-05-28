@@ -1,0 +1,416 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --outer-base: 65px;
+    user-select: none;
+    overflow: hidden;
+    --member-conversation-color: #d1a2ff;
+    --first-user-color: rgb(255, 165, 0);
+    --second-user-color: rgb(0, 191, 255);
+    --third-user-color: rgb(205, 92, 92);
+}
+
+html body {
+    height: 100%;
+    font-family: 'Roboto', sans-serif;
+    line-height: 1.15;
+    -webkit-text-size-adjust: 100%;
+    color: #000 !important;
+    background-color: transparent;
+}
+
+#tutorial {
+    width: 100%;
+    height: 100%;
+    max-width: 260px;
+    max-height: 260px;
+    position: relative;
+    padding: var(--outer-base);
+
+    @media (prefers-color-scheme: dark) {
+        & .Tutorial-modal__actions i {
+            color: #fff !important;
+        }
+    }
+
+    & i {
+        color: #000 !important;
+    }
+}
+
+.Tutorial {
+    height: 100%;
+    box-sizing: border-box;
+    transition: transform 0.25s ease-in-out, opacity 0.2s ease-out;
+
+    & .User {
+        pointer-events: none;
+
+        &__shadow {
+            display: none;
+        }
+
+        &__orb {
+            height: 100%;
+            width: 100%;
+            position: relative;
+            border-radius: 100%;
+            box-shadow: 0 0 10px #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: lightblue;
+        }
+
+        &__main-icons {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            hr {
+                width: 100%;
+                border-top-color: #000;
+            }
+        }
+
+        &__door,
+        &__megaphone {
+            transform: scale(1.45);
+        }
+    }
+
+    & .Members-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+
+        &::before {
+            content: '';
+            display: block;
+            width: calc(100% - 40px);
+            height: calc(100% - 40px);
+            margin: 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            clip-path: circle(40%);
+            pointer-events: none;
+        }
+
+        & .Member {
+            opacity: 1;
+            pointer-events: none;
+
+            &__orb {
+                font-size: 16px;
+            }
+
+            &:nth-child(1) {
+                transform: translate(-125%, -125%);
+                & .Member__orb {
+                    background-color: var(--first-user-color);
+                }
+            }
+            &:nth-child(2) {
+                transform: translate(0, -175%);
+                & .Member__orb {
+                    background-color: var(--second-user-color);
+                }
+            }
+            &:nth-child(3) {
+                transform: translate(125%, -125%);
+                & .Member__orb {
+                    background-color: var(--third-user-color);
+                }
+            }
+            &:nth-child(4) {
+                transform: translate(175%, 0);
+            }
+            &:nth-child(5) {
+                transform: translate(125%, 125%);
+            }
+
+            &--offline {
+                & .Member__orb {
+                    background-color: gray !important;
+                }
+            }
+
+            &:hover {
+                &:before {
+                    position: absolute;
+                    content: '';
+                    left: -8px;
+                    top: -8px;
+                    bottom: -8px;
+                    right: -8px;
+                    z-index: -1;
+                }
+
+                .Member__orb {
+                    width: 65px;
+                    height: 65px;
+                    font-size: 110%;
+                    box-shadow: 0 0 8px hsla(0, 0%, 10%, 0.5);
+                }
+            }
+        }
+    }
+
+    & .Overlay {
+        position: absolute;
+        top: 140px;
+        right: 0;
+        left: 0;
+        bottom: 0;
+        opacity: 0.8;
+        border-radius: 0.83rem;
+        z-index: 3;
+
+        &__inner {
+            position: relative;
+        }
+    }
+}
+
+.Tutorial.step-1 {
+    & .Members-container {
+        & .Member {
+            &:nth-child(1) {
+                z-index: 4;
+                pointer-events: all;
+                cursor: pointer;
+            }
+            &:not(:nth-child(1)) {
+                opacity: 0.8;
+                filter: blur(1px) grayscale(0.25);
+            }
+        }
+    }
+}
+
+.Tutorial.step-1,
+.Tutorial.step-2,
+.Tutorial.step-4,
+.Tutorial.step-5 {
+    & .User {
+        &__orb {
+            filter: blur(1px) grayscale(0.5);
+            opacity: 0.8;
+        }
+    }
+}
+
+.Tutorial.step-2 {
+    & .Members-container {
+        & .Member {
+            &:nth-child(1) {
+                & .Member__orb {
+                    background: var(--member-conversation-color);
+                    animation: talk-first 1s linear infinite;
+                }
+            }
+            &:nth-child(2) {
+                z-index: 4;
+                pointer-events: all;
+                cursor: pointer;
+            }
+            &:not(:nth-child(2)) {
+                opacity: 0.8;
+                filter: blur(1px) grayscale(0.25);
+            }
+        }
+    }
+}
+
+.Tutorial.step-2,
+.Tutorial.step-3 {
+    & .User {
+        &__orb {
+            & .flexbox-center {
+                width: 100%;
+                height: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+
+                & .conversation-icons {
+                    height: 85%;
+                    width: 85%;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-around;
+                    align-items: center;
+                    color: white;
+
+                    & i {
+                        font-size: 36px;
+                    }
+
+                    hr {
+                        border: 1px solid white;
+                        width: 100%;
+                    }
+                }
+            }
+        }
+    }
+}
+
+.Tutorial.step-3 {
+    & .Overlay {
+        top: 0;
+        bottom: 140px;
+
+        &__inner {
+            & .Tutorial-modal {
+                top: -30px;
+            }
+        }
+    }
+
+    & .User {
+        &__orb {
+            & .flexbox-center {
+                & .conversation-icons {
+                    & > i {
+                        color: #fff;
+                        opacity: 1;
+                        pointer-events: all;
+                        cursor: pointer;
+                        z-index: 4;
+                    }
+                }
+            }
+        }
+    }
+}
+
+.Tutorial.step-4 {
+    & .Member {
+        z-index: 4;
+        pointer-events: all;
+        cursor: pointer;
+    }
+}
+
+.Tutorial.step-5 {
+    & .Control {
+        opacity: 1;
+        display: block;
+        animation: controls-show 0.4s ease;
+        top: 5%;
+        left: 0%;
+        border-top: 5px solid var(--member-conversation-color);
+
+        &__label {
+            font-weight: 800;
+        }
+
+        &__options {
+            pointer-events: all;
+            z-index: 4;
+
+            & a {
+                color: #fff;
+                font-weight: 800;
+            }
+        }
+
+        &.tutorial_user_2 {
+            top: -5%;
+            left: 30%;
+        }
+    }
+}
+
+.Tutorial.step-6 {
+    & .User {
+        &__orb {
+            &-icons {
+                &__control {
+                    z-index: 4;
+
+                    & .User__door {
+                        z-index: 4;
+                        pointer-events: all;
+                        cursor: pointer;
+                    }
+                    & .User__megaphone {
+                        opacity: 0.1;
+                    }
+                }
+            }
+        }
+    }
+}
+
+.Tutorial.step-3,
+.Tutorial.step-4,
+.Tutorial.step-5 {
+    & .Members-container {
+        & .Member {
+            &:nth-child(1) {
+                & .Member__orb {
+                    background: var(--member-conversation-color);
+                    animation: talk-first 1s linear infinite;
+                }
+            }
+            &:nth-child(2) {
+                & .Member__orb {
+                    background: var(--member-conversation-color);
+                    animation: talk-second 1s linear infinite;
+                }
+            }
+        }
+    }
+}
+
+@keyframes talk-first {
+    0% {
+        box-shadow: 0 0 0 0 #ffa500b3;
+    }
+
+    70% {
+        box-shadow: 0 0 0 8px #faa5004c;
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 #faa50000;
+    }
+}
+
+@keyframes talk-second {
+    0% {
+        box-shadow: 0 0 0 0 #00bfffb3;
+    }
+
+    70% {
+        box-shadow: 0 0 0 8px #00bfff66;
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 #00bfff00;
+    }
+}
+
+@keyframes controls-show {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}

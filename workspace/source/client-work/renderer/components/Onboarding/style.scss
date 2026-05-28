@@ -1,0 +1,112 @@
+.Onboarding {
+    height: 340px;
+
+    &__container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: stretch;
+        align-items: flex-start;
+
+        &__tutorial {
+            .mdl-textfield {
+                padding: 0;
+            }
+            .Onboarding__form-section {
+                display: grid;
+                grid-template: auto/repeat(2, 1fr);
+                grid-gap: 0 20px;
+            }
+        }
+    }
+
+    &__title {
+        margin-top: unset;
+        font-weight: bold;
+        font-size: 22px;
+    }
+
+    &__form {
+        flex-grow: 1;
+        display: grid;
+        align-self: stretch;
+    }
+
+    &__form-section {
+        margin-bottom: 20px;
+
+        .mdl-textfield.mdl-textfield {
+            width: 100%;
+            padding: 0;
+        }
+
+        .MuiInputBase-root {
+            width: 100%;
+        }
+
+        .mdl-textarea {
+            width: 100%;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 20px;
+            max-height: 100px;
+        }
+    }
+
+    &__form-label.MuiFormLabel-root {
+        padding-bottom: 10px;
+    }
+
+    &__controls {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        margin-top: auto;
+        width: 100%;
+    }
+
+    .mdl-button {
+        min-width: 150px;
+        height: 40px;
+        text-transform: unset;
+    }
+
+    &__container__invitation {
+        .mdl-button {
+            text-transform: uppercase;
+        }
+    }
+
+    &__team {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+
+        & .mdl-textfield {
+            padding: 0;
+            &.mdl-textfield {
+                margin-right: 0;
+            }
+        }
+
+        &:first-of-type {
+            margin-bottom: 2rem;
+        }
+    }
+
+    &__team-text {
+        font-weight: bold;
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .MuiFormLabel-root {
+        padding-right: 10px;
+    }
+
+    &__quit.mdl-button {
+        margin-top: auto;
+    }
+}

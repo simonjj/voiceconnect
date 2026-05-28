@@ -1,0 +1,78 @@
+image: node:lts
+options:
+  docker: true
+
+setup: &setup
+  step:
+    name: Npm install
+    caches:
+      - node
+    script:
+      - npm install
+
+test: &test
+  step:
+    name: Test
+    caches:
+      - node
+    script:
+      - npm test
+    artifacts:
+      - coverage/**
+
+build: &build
+  step:
+    name: Build docker image
+    services:
+      - docker
+    caches:
+      - docker
+      - node
+    script:
+      - export BASH=$(which bash)
+      - npm run build
+      - npm --script-shell "${BASH}" run docker:build
+      - npm --script-shell "${BASH}" run docker:save
+    artifacts:
+      - image.tar
+
+publish: &publish
+  step:
+    name: Publish docker image
+    services:
+      - docker
+    script:
+      - docker load --input image.tar
+      - export IMAGE_NAME=${BITBUCKET_WORKSPACE}/${BITBUCKET_REPO_SLUG}
+      - export VERSION=$(node -e 'console.log(require("./package.json").version)');
+      - pipe: atlassian/aws-ecr-push-image:1.1.2
+        variables:
+          IMAGE_NAME: ${IMAGE_NAME}
+          TAGS: 'latest ${VERSION} ${BITBUCKET_COMMIT:0:6}'
+deploy:
+  step: &deploy
+    name: Deploy application
+    script:
+      - export IMAGE_NAME=${BITBUCKET_WORKSPACE}/${BITBUCKET_REPO_SLUG}
+      - export VERSION=$(node -e 'console.log(require("./package.json").version)');
+      - scp docker-compose.* ec2-user@${EC2_PUBLIC_IP}:~/.
+      - ssh ec2-user@${EC2_PUBLIC_IP} 'bash -s' < "./scripts/server.sh" -- -i "${IMAGE_NAME}" -v "${VERSION}"
+
+stage: &stage
+  step:
+    deployment: stage
+    <<: *deploy
+
+pipelines:
+  pull-requests:
+    '**':
+      - <<: *setup
+      - <<: *test
+  branches:
+    develop:
+      - <<: *setup
+      - parallel:
+          - <<: *test
+          - <<: *build
+      - <<: *publish
+      - <<: *stage

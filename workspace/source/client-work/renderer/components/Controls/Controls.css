@@ -1,0 +1,7 @@
+table {
+    margin-top: 15px;
+}
+
+.mdl-button + .mdl-button {
+    margin-left: $gutter;
+}

@@ -1,0 +1,11 @@
+{
+    "root": true,
+    "extends": ["@touchto/eslint-config"],
+    "ignorePatterns": ["coverage/", "data/", "dist/"],
+    "overrides": [
+        {
+            "files": ["**/*.test.js"],
+            "env": { "jest": true }
+        }
+    ]
+}

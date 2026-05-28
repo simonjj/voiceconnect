@@ -1,0 +1,33 @@
+{
+    "root": true,
+    "extends": [
+        "@touchto/eslint-config/react"
+    ],
+    "parser": "babel-eslint",
+    "parserOptions": {
+        "sourceType": "module",
+        "allowImportExportEverywhere": true
+    },
+    "settings": {
+        "react": {
+            "version": "detect"
+        }
+    },
+    "overrides": [
+        {
+            "files": [
+                "*.test.js"
+            ],
+            "env": {
+                "node": true,
+                "jest": true
+            },
+            "globals": {
+                "container": "readonly"
+            },
+            "rules": {
+                "react-hooks/exhaustive-deps": 0
+            }
+        }
+    ]
+}

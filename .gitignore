@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+*.env
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Local data
+server/connect-store.json
+
+# Vendored upstream bare git repos (reference material, ~14MB pack files)
+workspace/source/client/connect-client-repo/
+workspace/source/server/connect-server-repo/
+
+# Local debug/scratch artifacts
+tmp/
+*.har

@@ -1,0 +1,45 @@
+html {
+    .Connect:hover {
+        .Members {
+            &::before {
+                pointer-events: all;
+            }
+        }
+    }
+}
+.Members {
+    opacity: 1;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    pointer-events: none;
+
+    &::before {
+        content: '';
+        display: block;
+        width: calc(100% - 40px);
+        height: calc(100% - 40px);
+        margin: 20px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        clip-path: circle(40%);
+        pointer-events: none;
+    }
+
+    &.offline {
+        opacity: 0;
+    }
+}
+
+.conversation-actions-container {
+    display: flex;
+    justify-content: space-between;
+}

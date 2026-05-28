@@ -1,0 +1,5 @@
+.settings-main {
+    display: grid;
+    grid-template: auto/repeat(2, 1fr);
+    grid-column-gap: 3rem;
+}

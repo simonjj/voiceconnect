@@ -1,0 +1,19 @@
+{
+    "root": true,
+    "extends": [
+        "@touchto/eslint-config/react"
+    ],
+    "env": {
+        "node": true,
+        "jest": true
+    },
+    "ignorePatterns": [
+        "coverage/",
+        "data/"
+    ],
+    "settings": {
+        "react": {
+            "version": "detect"
+        }
+    }
+}

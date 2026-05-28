@@ -1,0 +1,103 @@
+@import 'https://fonts.googleapis.com/css2?family=Open+Sans&family=Roboto:wght@300;400;500;700&display=swap';
+
+$image_path: 'material-design-lite/src/images';
+@import 'material-design-lite/src/material-design-lite.scss';
+
+$primary: unquote('rgb(#{$color-primary})');
+$accent: unquote('rgb(#{$color-accent})');
+$inputWidth: 250px;
+$gutter: 30px;
+
+$night-font-default: #ffffff; //temp
+$night-font-secondary: rgba(255, 255, 255, 0.7); //temp
+$night-background: #000; //temp
+
+.mdl-button + .mdl-button {
+    margin-left: $gutter;
+}
+
+.mdl-button--accent:not(:disabled),
+.mdl-data-table th {
+    color: #2c3e50 !important;
+}
+
+.mdl-button--accent:hover:not(:disabled) {
+    color: #000 !important;
+}
+
+.mdl-textfield.mdl-textfield {
+    width: $inputWidth;
+    margin-right: $gutter;
+
+    &__input:focus {
+        outline: none;
+    }
+
+    & .MuiFormLabel-root.Mui-focused {
+        color: $primary;
+    }
+
+    & .MuiInput-underline:after {
+        border-color: $primary;
+    }
+
+    .MuiOutlinedInput-notchedOutline {
+        border-color: $primary !important;
+        @media (prefers-color-scheme: dark) {
+            border-color: $night-font-default !important;
+        }
+    }
+
+    .MuiInputBase-root {
+        color: $primary;
+    }
+
+    .MuiOutlinedInput-input {
+        padding: 14px 10px;
+    }
+
+    .MuiOutlinedInput-input:hover + .MuiOutlinedInput-notchedOutline {
+        border-width: 2px;
+    }
+}
+
+.mdl-textarea {
+    font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+    color: $primary;
+    resize: none;
+    border-radius: 5px;
+    border-color: $primary;
+    padding: 14px 10px;
+    box-sizing: border-box;
+
+    &:focus {
+        outline: none;
+        border-width: 2px;
+        padding: 13px 9px;
+    }
+
+    &:hover {
+        border-width: 2px;
+        padding: 13px 9px;
+    }
+}
+
+.mdl-slider__container {
+    display: flex;
+    align-items: center;
+    width: $inputWidth;
+    margin-top: $gutter;
+}
+
+.MuiTooltip-popper {
+    max-width: 250px;
+
+    .MuiTooltip-tooltip {
+        background: unquote('rgba(#{$color-primary}, 0.9)');
+        font-size: 11px;
+    }
+}
+
+.MuiInput-underline:after {
+    border-bottom-color: $primary !important;
+}

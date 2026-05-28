@@ -1,0 +1,199 @@
+:root {
+  --bg: #0f0f14;
+  --surface: #1a1a24;
+  --border: #2a2a3a;
+  --text: #e4e4ec;
+  --text-dim: #8888a0;
+  --accent: #6366f1;
+  --green: #4ade80;
+  --red: #ef4444;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* ── Header ─────────────────────────────────────── */
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.app-header h1 { font-size: 1.5rem; }
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--red);
+}
+.dot.online { background: var(--green); }
+.mic-indicator { font-size: 1rem; }
+
+/* ── Banners ────────────────────────────────────── */
+
+.error-banner, .knock-banner {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+.error-banner {
+  background: #2d1215; color: var(--red); border: 1px solid #5c2328;
+}
+.knock-banner {
+  background: #1a1a2e; color: #fbbf24; border: 1px solid #3a3a4e;
+}
+
+/* ── Hallway ────────────────────────────────────── */
+
+.hallway {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.hallway-empty {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-dim);
+}
+.hallway-empty code {
+  display: block;
+  margin-top: 0.75rem;
+  background: var(--surface);
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  text-align: left;
+  white-space: pre;
+  overflow-x: auto;
+}
+.hint { font-size: 0.8rem; margin-top: 0.5rem; }
+
+/* ── Agent Agent ──────────────────────────────────── */
+
+.agent-voiceconnect {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  padding: 1rem;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+.agent-voiceconnect:hover {
+  border-color: var(--border);
+  transform: translateY(-2px);
+}
+.agent-voiceconnect.active {
+  border-color: var(--voiceconnect-color, var(--accent));
+  box-shadow: 0 0 20px color-mix(in srgb, var(--voiceconnect-color, var(--accent)) 40%, transparent);
+}
+/* Halo only while audibly speaking (Q7). */
+.agent-voiceconnect.speaking .voiceconnect-circle {
+  animation: halo 1.5s ease-in-out infinite;
+  box-shadow: 0 0 25px var(--voiceconnect-color), 0 0 45px color-mix(in srgb, var(--voiceconnect-color) 60%, transparent);
+}
+.agent-voiceconnect.thinking .voiceconnect-circle {
+  opacity: 0.85;
+  animation: thinking-fade 1.2s ease-in-out infinite;
+}
+@keyframes halo {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.07); }
+}
+@keyframes thinking-fade {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 0.55; }
+}
+
+.voiceconnect-circle {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: var(--voiceconnect-color, #6b7280);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 0.75rem;
+  transition: all 0.3s;
+  box-shadow: 0 0 15px color-mix(in srgb, var(--voiceconnect-color) 40%, transparent);
+}
+.pulse .voiceconnect-circle {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.85; }
+}
+
+.voiceconnect-initial {
+  font-size: 1.5rem; font-weight: 700; color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+.voiceconnect-info { text-align: center; }
+.voiceconnect-name { display: block; font-weight: 600; font-size: 0.9rem; }
+.voiceconnect-status {
+  display: block; font-size: 0.75rem; color: var(--text-dim); margin-top: 0.25rem;
+}
+
+/* ── Audio Session ──────────────────────────────── */
+
+.audio-session {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+}
+.session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.session-title { font-weight: 600; }
+.end-button {
+  background: var(--red); color: white; border: none;
+  padding: 0.5rem 1.25rem; border-radius: 8px;
+  cursor: pointer; font-weight: 500;
+  transition: opacity 0.2s;
+}
+.end-button:hover { opacity: 0.85; }
+
+.session-content {
+  display: flex; flex-direction: column; gap: 0.75rem;
+}
+
+.bubble {
+  padding: 0.75rem 1rem; border-radius: 12px; max-width: 85%;
+}
+.bubble-label {
+  display: block; font-size: 0.7rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-bottom: 0.25rem; color: var(--text-dim);
+}
+.user-bubble { background: #1e293b; align-self: flex-end; }
+.agent-bubble {
+  background: #1a1a2e; align-self: flex-start;
+  border: 1px solid var(--border);
+}

@@ -1,0 +1,364 @@
+:root {
+    --member-0-color: #ffa500b3;
+    --member-1-color: #00bfffb3;
+    --member-2-color: #cd5c5cb3;
+    --member-3-color: #ffa07ab3;
+    --member-4-color: #48d1ccb3;
+    --member-5-color: #87ceebb3;
+    --member-6-color: #ffdeadb3;
+    --member-active-color: gray; /* Dynamically updated in Member */
+    --member-badge-background: #ff6969;
+}
+
+html {
+    & .Connect {
+        &:hover {
+            .Members {
+                .Member {
+                    &.show.one,
+                    &__add {
+                        transform: translate(-125%, -125%);
+                    }
+                    &.show.two {
+                        transform: translate(0, -175%);
+                    }
+                    &.show.three {
+                        transform: translate(125%, -125%);
+                    }
+                    &.show.four {
+                        transform: translate(175%, 0);
+                    }
+                    &.show.five {
+                        transform: translate(125%, 125%);
+                    }
+                    &.show.six {
+                        transform: translate(0, 175%);
+                    }
+                    &.show.seven {
+                        transform: translate(-125%, 125%);
+                    }
+                    &.show.eight {
+                        transform: translate(-175%, 0);
+                    }
+                }
+            }
+        }
+    }
+}
+
+.Member {
+    position: absolute;
+    pointer-events: auto;
+    opacity: 0.5;
+    transition: 0.2s transform ease-out 0.12s, 0.2s opacity ease-out;
+    z-index: 0;
+
+    &.hide {
+        display: none;
+    }
+
+    &:hover {
+        &:before {
+            position: absolute;
+            content: '';
+            inset: 0;
+            z-index: -1;
+        }
+
+        &.one:before {
+            right: -8px;
+            bottom: -8px;
+        }
+
+        &.two:before {
+            bottom: -8px;
+        }
+
+        &.three:before {
+            left: -8px;
+            bottom: -8px;
+        }
+
+        &.four:before {
+            left: -8px;
+        }
+
+        &.five:before {
+            top: -8px;
+            left: -8px;
+        }
+
+        &.six:before {
+            top: -8px;
+        }
+        &.seven:before {
+            top: -8px;
+            right: -8px;
+        }
+
+        &.eight:before {
+            right: -8px;
+        }
+
+        .Member__orb {
+            width: 65px;
+            height: 65px;
+            font-size: 110%;
+            box-shadow: 0 0 8px hsla(0, 0%, 10%, 0.5);
+        }
+    }
+
+    &__orb {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 0;
+        width: 60px;
+        height: 60px;
+        border-radius: 100%;
+        overflow: hidden;
+        font-weight: 900;
+        text-transform: uppercase;
+        background-color: lightblue;
+        transition: 0.1s width ease-out 0.12s, 0.1s height ease-out 0.12s,
+            0.1s box-shadow ease-out, 0.1s font-size ease-out 0.12s;
+    }
+
+    &__badge {
+        position: absolute;
+        top: -9px;
+        right: -5px;
+        padding: 5px;
+        display: flex;
+        justify-content: center;
+        align-content: center;
+        border: none;
+        border-radius: 100%;
+        background: var(--member-badge-background);
+        box-shadow: none;
+        -webkit-background-clip: padding-box;
+        color: white;
+
+        & i {
+            font-size: 16px;
+        }
+    }
+
+    &__icons {
+        display: none;
+    }
+
+    &--visible {
+        animation: raiseIndex 0.5s ease;
+
+        &.show.one {
+            transform: translate(-125%, -125%);
+        }
+
+        &.show.two {
+            transform: translate(0, -175%);
+        }
+
+        &.show.three {
+            transform: translate(125%, -125%);
+        }
+
+        &.show.four {
+            transform: translate(175%, 0);
+        }
+
+        &.show.five {
+            transform: translate(125%, 125%);
+        }
+
+        &.show.six {
+            transform: translate(0, 175%);
+        }
+
+        &.show.seven {
+            transform: translate(-125%, 125%);
+        }
+
+        &.show.eight {
+            transform: translate(-175%, 0);
+        }
+    }
+
+    &--ready {
+        opacity: 1;
+
+        .Member__orb {
+            text-shadow: 0 0 12px #fff;
+        }
+
+        .Member__icons {
+            display: none;
+        }
+
+        &:hover {
+            .Member__icons {
+                display: block;
+            }
+
+            .Member__initials {
+                display: none;
+            }
+        }
+
+        &.Member--visible {
+            z-index: 1;
+
+            &:hover {
+                z-index: 5;
+                .Member__icons {
+                    display: none;
+                }
+
+                .Member__initials {
+                    display: block;
+                }
+            }
+
+            &.Member--active {
+                .active &:hover {
+                    .Control {
+                        display: block;
+                        opacity: 1;
+                    }
+                }
+                &:hover {
+                    .Control--volume {
+                        display: block;
+                        opacity: 1;
+                    }
+                }
+
+                .Member__orb {
+                    background-color: var(--member-active-color);
+                }
+            }
+        }
+    }
+
+    &__add {
+        opacity: 1;
+
+        & .Member__orb {
+            background-color: #ffa500b3;
+        }
+    }
+
+    &.Member--offline {
+        .Member__icons {
+            display: none;
+        }
+
+        &.show,
+        &.hide {
+            .Member__orb {
+                background-color: grey;
+            }
+        }
+    }
+
+    &[data-switching='true'] {
+        &.show.one {
+            animation: show1 0.3s ease;
+        }
+        &.show.two {
+            animation: show2 0.3s ease;
+        }
+        &.show.three {
+            animation: show3 0.3s ease;
+        }
+        &.show.four {
+            animation: show4 0.3s ease;
+        }
+        &.show.five {
+            animation: show5 0.3s ease;
+        }
+        &.show.six {
+            animation: show6 0.3s ease;
+        }
+        &.show.seven {
+            animation: show7 0.3s ease;
+        }
+        &.show.eight {
+            animation: show8 0.3s ease;
+        }
+    }
+}
+
+@keyframes show1 {
+    from {
+        transform: translate(0, 0);
+    }
+    to {
+        transform: translate(-125%, -125%);
+    }
+}
+@keyframes show2 {
+    from {
+        transform: translate(0, 0);
+    }
+    to {
+        transform: translate(0, -175%);
+    }
+}
+@keyframes show3 {
+    from {
+        transform: translate(0, 0);
+    }
+    to {
+        transform: translate(125%, -125%);
+    }
+}
+@keyframes show4 {
+    from {
+        transform: translate(0, 0);
+    }
+    to {
+        transform: translate(175%, 0);
+    }
+}
+@keyframes show5 {
+    from {
+        transform: translate(0, 0);
+    }
+    to {
+        transform: translate(125%, 125%);
+    }
+}
+@keyframes show6 {
+    from {
+        transform: translate(0, 0);
+    }
+    to {
+        transform: translate(0, 175%);
+    }
+}
+@keyframes show7 {
+    from {
+        transform: translate(0, 0);
+    }
+    to {
+        transform: translate(-125%, 125%);
+    }
+}
+@keyframes show8 {
+    from {
+        transform: translate(0, 0);
+    }
+    to {
+        transform: translate(-175%, 0);
+    }
+}
+
+@keyframes raiseIndex {
+    from {
+        z-index: 0;
+    }
+    to {
+        z-index: 1;
+    }
+}

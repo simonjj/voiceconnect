@@ -1,0 +1,6 @@
+data
+notes
+node_modules
+.git
+*Dockerfile*
+*docker-compose*

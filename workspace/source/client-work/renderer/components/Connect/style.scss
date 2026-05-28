@@ -1,0 +1,214 @@
+:root {
+    --outer-base: 45px;
+    user-select: none;
+    overflow: hidden;
+    font-family: 'Roboto', sans-serif;
+}
+
+html,
+body {
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
+}
+body {
+    padding: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+html {
+    &.active {
+        .Connect {
+            opacity: 1;
+
+            &_shrink {
+                transform: initial;
+                pointer-events: all;
+
+                .material-icons {
+                    transform: initial;
+                }
+
+                .Members {
+                    display: flex;
+                    pointer-events: all;
+                }
+            }
+        }
+    }
+    &.active_conversation {
+        .Connect {
+            opacity: 1;
+        }
+    }
+}
+#main {
+    box-sizing: border-box;
+    height: 100%;
+    width: 100%;
+    max-width: 220px;
+    max-height: 220px;
+    position: absolute;
+    padding: var(--outer-base);
+}
+
+.Connect {
+    height: 100%;
+    position: relative;
+    box-sizing: border-box;
+    opacity: 0.5;
+    transition: transform 0.25s ease-in-out, opacity 0.2s ease-out;
+
+    .User {
+        &__shadow {
+            border-radius: 100%;
+            box-shadow: 0 0 10px black;
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            z-index: -1;
+        }
+
+        &__orb,
+        &__orb--offline {
+            height: 100%;
+            width: 100%;
+            position: relative;
+            border-radius: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        &__orb {
+            background: lightblue;
+            z-index: 4;
+
+            &--offline {
+                background-color: gray;
+            }
+        }
+
+        &__main-icons {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+
+            hr {
+                width: 100%;
+            }
+        }
+
+        &__door {
+            transition: transform 0.25s ease-in-out;
+        }
+
+        &__megaphone {
+            transition: font-size 0.2s;
+        }
+
+        .conversation-icons {
+            height: 85%;
+            width: 85%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            color: white;
+
+            hr {
+                border: 1px solid white;
+                width: 100%;
+            }
+        }
+    }
+
+    .self {
+        position: relative;
+        width: 100%;
+
+        .name {
+            width: 100%;
+            transition: 0.2s opacity ease-out, 0.2s transform ease-out;
+            transition-delay: 0.15s;
+        }
+
+        .setup {
+            display: flex;
+            font-size: 35px;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            opacity: 0;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s opacity ease-out, 0.2s transform ease-out;
+            transition-delay: 0.15s;
+            transform: scale(0);
+        }
+
+        &:hover {
+            .setup {
+                opacity: 1;
+                transform: scale(1);
+            }
+            .name {
+                opacity: 0;
+                transform: scale(0);
+            }
+        }
+    }
+
+    &_shrink {
+        opacity: 0.75;
+        transform: scale(0.5);
+
+        .User {
+            &__orb {
+                pointer-events: none;
+            }
+
+            &__main-icons {
+                hr {
+                    display: none;
+                }
+            }
+
+            &__megaphone {
+                font-size: 0;
+            }
+
+            &__door {
+                transform: scale(1.45);
+                pointer-events: none;
+            }
+        }
+
+        .Members {
+            /*display: none;*/
+            pointer-events: none;
+
+            &::before {
+                display: none;
+            }
+        }
+    }
+}
+
+.flexbox-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.viewport-sizing {
+    color: hsl(0, 0%, 15%);
+    text-shadow: hsla(0, 0%, 100%, 0.75) 0 0 25px;
+    font-weight: 900;
+    font-size: 40px;
+    line-height: 55px;
+}

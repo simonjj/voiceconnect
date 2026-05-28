@@ -1,0 +1,35 @@
+/* Override the styling brought in from the marketing site */
+.c-help {
+    padding-top: 75px;
+    font-family: 'Open Sans', 'Helvetica', 'Arial', sans-serif !important;
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif !important;
+
+        &[id] {
+            margin-top: -80px;
+            padding-top: 80px;
+        }
+    }
+
+    a {
+        color: rgb($material-primary) !important;
+
+        &:hover {
+            color: rgb($material-accent) !important;
+        }
+    }
+
+    p {
+        color: #2c3e50 !important;
+    }
+}
+
+.connect-version {
+    text-align: center;
+}

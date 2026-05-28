@@ -1,0 +1,36 @@
+<svg id="Connect_Logo" data-name="Connect Logo" xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #014f58;
+      }
+
+      .cls-2, .cls-3 {
+        fill: #1cbbb4;
+        opacity: 0.71;
+      }
+
+      .cls-3 {
+        fill-rule: evenodd;
+      }
+
+      .cls-4 {
+        fill: #ffdd6a;
+      }
+
+      .cls-5 {
+        fill: #06353b;
+      }
+    </style>
+  </defs>
+  <circle id="Ellipse_1_copy_5" data-name="Ellipse 1 copy 5" class="cls-1" cx="512" cy="512" r="512"/>
+  <circle id="Ellipse_3_copy_4" data-name="Ellipse 3 copy 4" class="cls-2" cx="103.869" cy="103.869" r="103.869" transform="translate(410.01 47.322)"/>
+  <circle id="Ellipse_3_copy_4-2" data-name="Ellipse 3 copy 4" class="cls-2" cx="103.869" cy="103.869" r="103.869" transform="translate(409.725 770.022)"/>
+  <circle id="Ellipse_3_copy_6" data-name="Ellipse 3 copy 6" class="cls-2" cx="103.84" cy="103.84" r="103.84" transform="translate(154.495 153.099)"/>
+  <circle id="Ellipse_3_copy_6-2" data-name="Ellipse 3 copy 6" class="cls-2" cx="103.869" cy="103.869" r="103.869" transform="translate(665.298 664.272)"/>
+  <path id="Ellipse_3_copy_7" data-name="Ellipse 3 copy 7" class="cls-3" d="M677.36,392.2a103.891,103.891,0,1,1,0-146.778A103.891,103.891,0,0,1,677.36,392.2Z" transform="translate(165.927 -61.138)"/>
+  <circle id="Ellipse_3_copy_7-2" data-name="Ellipse 3 copy 7" class="cls-2" cx="103.984" cy="103.984" r="103.984" transform="translate(153.981 664.13)"/>
+  <path id="Ellipse_3_copy_5" data-name="Ellipse 3 copy 5" class="cls-3" d="M264.945,354.991A103.727,103.727,0,1,1,160.994,458.718,103.727,103.727,0,0,1,264.945,354.991Z" transform="translate(-112.771 54.035)"/>
+  <path id="Union_2" data-name="Union 2" class="cls-4" d="M0,232.738C0,104.2,104.2,0,232.738,0A232.79,232.79,0,0,1,446.645,140.878H736.23s4.438,31.809,4.438,91.383-3.859,92.667-3.859,92.667H446.5A232.781,232.781,0,0,1,232.738,465.476C104.2,465.476,0,361.276,0,232.738Z" transform="translate(279.262 279.261)"/>
+  <path id="Union_1" data-name="Union 1" class="cls-5" d="M0,209.448C0,93.774,93.773,0,209.448,0A209.528,209.528,0,0,1,406.857,139.292h308.5s3.418,21.022,3.418,70.285-3.5,71.85-3.5,71.85H406.2A209.53,209.53,0,0,1,209.448,418.9C93.773,418.9,0,325.123,0,209.448Z" transform="translate(302.553 302.552)"/>
+</svg>
