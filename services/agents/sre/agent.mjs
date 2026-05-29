@@ -50,7 +50,7 @@ const SRE_ENDPOINT   = (process.env.SRE_ENDPOINT || "").replace(/\/+$/, "");
 const SRE_DISPLAY    = process.env.SRE_DISPLAY_NAME || "VoiceConnect";
 const SCOPE          = "https://azuresre.ai/.default";
 const TURN_TIMEOUT   = Number(process.env.SRE_TURN_TIMEOUT_MS || "90000");
-const SILENCE_MS     = Number(process.env.SRE_SILENCE_MS || "8000");
+const SILENCE_MS     = Number(process.env.SRE_SILENCE_MS || "30000");
 const AUTH_TOKEN     = process.env.AUTH_TOKEN || "";
 const PORT           = Number(process.env.PORT || "8080");
 
@@ -249,10 +249,14 @@ app.post("/chat", async (req, res) => {
         if (smt != null) {
           const preview = (content0.text || "").slice(0, 140).replace(/\s+/g, " ").trim();
           if (preview) ndjson(res, { type: "debug", agent_id: AGENT_ID, kind: String(smt), content: preview });
+          // Tool/reasoning activity is liveness — keep the connection open
+          // while SRE is still working (az calls, KQL queries can take 20-90s).
+          if (sawFinalToken) armSilence();
           return;
         }
         if (content0.$type === "functionCall" || content0.$type === "functionResult") {
           ndjson(res, { type: "debug", agent_id: AGENT_ID, kind: content0.$type, content: content0.name || "" });
+          if (sawFinalToken) armSilence();
           return;
         }
         if (content0.$type !== "text") return;

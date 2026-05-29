@@ -57,6 +57,36 @@ function xmlEscape(s) {
   return String(s).replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" }[c]));
 }
 
+// Convert agent markdown/code/URL text into something TTS can read aloud
+// without speaking the literal "asterisk", "backtick", or a raw URL. Applied
+// per sentence-buffered chunk before sending to ConversationRelay.
+function voicify(s) {
+  let t = String(s ?? "");
+  // Fenced code blocks ```...``` and inline code `...` — drop the markers,
+  // keep short content, replace very long blocks with "(code omitted)".
+  t = t.replace(/```[\s\S]*?```/g, (block) => {
+    const inner = block.slice(3, -3).replace(/^[a-zA-Z0-9_-]+\n/, "").trim();
+    return inner.length > 200 ? " (code omitted) " : ` ${inner} `;
+  });
+  t = t.replace(/`([^`]+)`/g, "$1");
+  // Markdown links [label](url) → "label". Bare URLs → "(link)".
+  t = t.replace(/\[([^\]]+)\]\((?:[^)]+)\)/g, "$1");
+  t = t.replace(/\bhttps?:\/\/\S+/gi, "(link)");
+  // Headings, blockquotes, bold/italic markers.
+  t = t.replace(/^\s{0,3}#{1,6}\s+/gm, "");
+  t = t.replace(/^\s{0,3}>\s?/gm, "");
+  t = t.replace(/\*\*(.+?)\*\*/g, "$1");
+  t = t.replace(/(?<!\w)\*(.+?)\*(?!\w)/g, "$1");
+  t = t.replace(/__(.+?)__/g, "$1");
+  t = t.replace(/~~(.+?)~~/g, "$1");
+  // Bullet markers at the start of a line.
+  t = t.replace(/^\s*[-*+]\s+/gm, "");
+  t = t.replace(/^\s*\d+\.\s+/gm, "");
+  // Collapse whitespace + leftover newlines.
+  t = t.replace(/[ \t]+/g, " ").replace(/\n{2,}/g, ". ").replace(/\n/g, " ").trim();
+  return t;
+}
+
 const app = express();
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
@@ -228,6 +258,28 @@ wss.on("connection", (ws, req) => {
     let buffer = "";
     let lastAgent = null;
     let saidAnything = false;
+    // Buffer raw agent text and only flush voicify'd output at sentence
+    // boundaries (or on stream end) so markdown markers that span chunks
+    // (e.g. ** spread across two tokens) are stripped before TTS.
+    let pendingText = "";
+    const flushPending = (final = false) => {
+      if (!pendingText) return;
+      const m = pendingText.match(/^([\s\S]*[.!?\n])\s+/);
+      let toSpeak;
+      if (m) {
+        toSpeak = m[1];
+        pendingText = pendingText.slice(m[0].length);
+      } else if (final) {
+        toSpeak = pendingText;
+        pendingText = "";
+      } else {
+        return;
+      }
+      const spoken = voicify(toSpeak);
+      if (!spoken) return;
+      saidAnything = true;
+      sendJson({ type: "text", token: spoken + " ", last: false });
+    };
 
     try {
       while (true) {
@@ -246,11 +298,14 @@ wss.on("connection", (ws, req) => {
             // Emit a small lead-in when a new agent starts speaking. Helps the
             // caller follow multi-agent replies without a visual cue.
             if (lastAgent && evt.agent_id && evt.agent_id !== lastAgent) {
+              flushPending(true);
               sendJson({ type: "text", token: " ", last: false });
             }
             lastAgent = evt.agent_id || lastAgent;
-            saidAnything = true;
-            sendJson({ type: "text", token: evt.content, last: false });
+            pendingText += evt.content;
+            // Flush as many complete sentences as we have buffered.
+            let prev;
+            do { prev = pendingText; flushPending(false); } while (pendingText !== prev);
           } else if (evt.type === "debug" && evt.content) {
             // Server-side observability of what agents are doing during long
             // reasoning + tool calls. Not spoken to the caller.
@@ -269,6 +324,7 @@ wss.on("connection", (ws, req) => {
     }
 
     if (!myAbort.signal.aborted) {
+      flushPending(true);
       if (!saidAnything) {
         sendJson({ type: "text", token: "Hmm, no one spoke up. Try addressing someone, like 'hey Aria'.", last: true });
       } else {
