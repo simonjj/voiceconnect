@@ -11,6 +11,7 @@ Protocol:
 import asyncio
 import json
 import logging
+import os
 import numpy as np
 import torch
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -24,9 +25,11 @@ app = FastAPI(title="Connect STT Service")
 whisper_model = None
 vad_model = None
 
-SILENCE_THRESHOLD_S = 0.7
-MIN_SPEECH_S = 0.3
+SILENCE_THRESHOLD_S = float(os.getenv("STT_SILENCE_THRESHOLD_S", "0.4"))
+MIN_SPEECH_S = float(os.getenv("STT_MIN_SPEECH_S", "0.3"))
 VAD_CHUNK_SAMPLES = 512  # Silero VAD expects 512 samples at 16kHz
+WHISPER_MODEL = os.getenv("STT_WHISPER_MODEL", "large-v3-turbo")
+WHISPER_BEAM_SIZE = int(os.getenv("STT_BEAM_SIZE", "1"))
 
 
 def resample(audio: np.ndarray, orig_sr: int, target_sr: int = 16000) -> np.ndarray:
@@ -41,8 +44,8 @@ def resample(audio: np.ndarray, orig_sr: int, target_sr: int = 16000) -> np.ndar
 @app.on_event("startup")
 async def startup():
     global whisper_model, vad_model
-    logger.info("Loading Whisper large-v3...")
-    whisper_model = WhisperModel("large-v3", device="cuda", compute_type="float16")
+    logger.info(f"Loading Whisper {WHISPER_MODEL}...")
+    whisper_model = WhisperModel(WHISPER_MODEL, device="cuda", compute_type="float16")
     logger.info("Loading Silero VAD...")
     vad_model, _ = torch.hub.load("snakers4/silero-vad", "silero_vad")
     vad_model.eval()
@@ -97,7 +100,7 @@ async def transcribe(ws: WebSocket):
                         duration_s = len(speech_buffer) / 16000
                         if duration_s >= MIN_SPEECH_S:
                             segments, _ = whisper_model.transcribe(
-                                speech_buffer, beam_size=5, language="en",
+                                speech_buffer, beam_size=WHISPER_BEAM_SIZE, language="en",
                                 vad_filter=False,
                             )
                             text = " ".join(seg.text for seg in segments).strip()
