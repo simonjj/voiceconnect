@@ -1,0 +1,19 @@
+{
+  "name": "sre-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "VoiceConnect SRE persona — bridges /chat NDJSON to Azure SRE Agent SignalR data plane.",
+  "main": "agent.mjs",
+  "scripts": {
+    "start": "node agent.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@azure/identity": "^4.4.1",
+    "@microsoft/signalr": "^8.0.7",
+    "express": "^4.21.0"
+  }
+}

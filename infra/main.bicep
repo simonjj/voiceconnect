@@ -20,6 +20,23 @@ param authToken string = 'dev-token'
 @description('Sandbox group name (created in this RG).')
 param sandboxGroupName string = 'voiceconnect-sb'
 
+@description('Full SRE agent endpoint URL (e.g. https://ticket-sre--xxx.<region-hash>.eastus2.azuresre.ai). When empty, the SRE persona container app is skipped.')
+param sreEndpoint string = ''
+
+@description('Display name the SRE persona sends with messages (visible in SRE Agent UI thread history).')
+param sreDisplayName string = 'VoiceConnect'
+
+@description('Persona text shown in the SRE agent card.')
+param srePersona string = 'You are SRE, an Azure operations expert who answers questions about live resources, telemetry, and infrastructure.'
+
+@description('Kokoro voice id for the SRE persona.')
+param sreVoice string = 'am_michael'
+
+@description('Hex color for the SRE persona.')
+param sreColor string = '#10b981'
+
+var deploySre = !empty(sreEndpoint)
+
 var tags = {
   app: 'voiceconnect'
   managedBy: 'bicep'
@@ -194,14 +211,9 @@ resource ttsApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
 }
 
 // ───────────────────────── Sandbox Group ─────────────────────────
-// Hosts the per-agent Copilot CLI sandboxes. Sandboxes themselves are
-// created via the `aca` CLI in deploy.ps1 (data-plane) — only the group
-// is declared here.
-resource sandboxGroup 'Microsoft.App/sandboxGroups@2026-02-01-preview' = {
-  name: sandboxGroupName
-  location: location
-  tags: tags
-}
+// Sandbox group is created via the `aca` CLI in deploy.ps1 — the
+// Microsoft.App/sandboxGroups@2026-02-01-preview ARM type causes
+// preflight validation failures so we use the data-plane CLI.
 
 // ───────────────────────── Server (CPU, public) ─────────────────────────
 resource serverApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
@@ -259,10 +271,77 @@ resource serverApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
   }
 }
 
+// ───────────────────────── SRE persona (CPU, public, optional) ─────────────────────────
+// Hosted on the standard env so it can use the UAMI for AAD token acquisition
+// against the Azure SRE Agent data plane. Skipped when sreEndpoint is empty.
+resource sreApp 'Microsoft.App/containerApps@2024-10-02-preview' = if (deploySre) {
+  name: '${namePrefix}-sre'
+  location: location
+  tags: union(tags, { agentId: 'sre' })
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: { '${uami.id}': {} }
+  }
+  dependsOn: [ acrRole ]
+  properties: {
+    environmentId: cae.id
+    workloadProfileName: 'Consumption'
+    configuration: {
+      activeRevisionsMode: 'Single'
+      registries: [
+        {
+          server: acrLoginServer
+          identity: uami.id
+        }
+      ]
+      secrets: [
+        { name: 'auth-token', value: authToken }
+      ]
+      ingress: {
+        external: true
+        targetPort: 8080
+        transport: 'auto'
+        allowInsecure: false
+      }
+    }
+    template: {
+      containers: [
+        {
+          name: 'sre'
+          image: '${acrLoginServer}/connect-sre-agent:${imageTag}'
+          resources: {
+            cpu: json('0.5')
+            memory: '1Gi'
+          }
+          env: [
+            { name: 'AGENT_ID',         value: 'sre' }
+            { name: 'AGENT_NAME',       value: 'SRE' }
+            { name: 'AGENT_VOICE',      value: sreVoice }
+            { name: 'AGENT_COLOR',      value: sreColor }
+            { name: 'AGENT_PERSONA',    value: srePersona }
+            { name: 'SRE_ENDPOINT',     value: sreEndpoint }
+            { name: 'SRE_DISPLAY_NAME', value: sreDisplayName }
+            { name: 'AZURE_CLIENT_ID',  value: uami.properties.clientId }
+            { name: 'SERVER_URL',       value: 'https://${serverApp.properties.configuration.ingress.fqdn}' }
+            { name: 'AUTH_TOKEN',       secretRef: 'auth-token' }
+            { name: 'PORT',             value: '8080' }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
+      }
+    }
+  }
+}
+
 output serverUrl string = 'https://${serverApp.properties.configuration.ingress.fqdn}'
 output sttFqdn string = sttApp.properties.configuration.ingress.fqdn
 output ttsFqdn string = ttsApp.properties.configuration.ingress.fqdn
 output environmentName string = cae.name
 output identityClientId string = uami.properties.clientId
 output identityPrincipalId string = uami.properties.principalId
-output sandboxGroupName string = sandboxGroup.name
+output sandboxGroupName string = sandboxGroupName
+#disable-next-line BCP318
+output sreUrl string = deploySre ? 'https://${sreApp.properties.configuration.ingress.fqdn}' : ''

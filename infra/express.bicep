@@ -39,6 +39,15 @@ param serverUrl string
 @secure()
 param authToken string
 
+@description('Enable the twilio-bridge container app. When false, the bridge is not deployed.')
+param deployTwilioBridge bool = false
+
+@description('Welcome greeting spoken to callers by ConversationRelay.')
+param twilioWelcomeGreeting string = 'Hi! You are on with the VoiceConnect agents. Who would you like to talk to?'
+
+@description('Twilio ConversationRelay voice id.')
+param twilioVoice string = 'en-US-AriaNeural'
+
 @description('List of agents. Each gets its own Express container app and is wired to a dedicated sandbox.')
 param agents array = [
   {
@@ -66,23 +75,21 @@ var tags = {
 }
 
 // ───────────────────────── Express environment ─────────────────────────
-// BCP037 fires because environmentMode isn't yet in the published schema;
-// the property is required for Express envs.
+// environmentMode is only supported on 2026-03-02-preview+; older API
+// versions reject it. appLogsConfiguration must be omitted entirely
+// (string "none" is not accepted by 2025+ APIs).
 #disable-next-line BCP037
-resource expressEnv 'Microsoft.App/managedEnvironments@2024-10-02-preview' = {
+resource expressEnv 'Microsoft.App/managedEnvironments@2026-03-02-preview' = {
   name: '${namePrefix}-express-env'
   location: location
   tags: tags
   properties: {
     environmentMode: 'Express'
-    appLogsConfiguration: {
-      destination: 'none'
-    }
   }
 }
 
 // ───────────────────────── Per-agent container apps ─────────────────────────
-resource agentApps 'Microsoft.App/containerApps@2024-10-02-preview' = [for agent in agents: {
+resource agentApps 'Microsoft.App/containerApps@2026-03-02-preview' = [for agent in agents: {
   name: '${namePrefix}-agent-${agent.id}'
   location: location
   tags: union(tags, { agentId: agent.id })
@@ -97,10 +104,7 @@ resource agentApps 'Microsoft.App/containerApps@2024-10-02-preview' = [for agent
           passwordSecretRef: 'acr-password'
         }
       ]
-      secrets: [
-        { name: 'acr-password', value: acrPassword }
-        { name: 'auth-token', value: authToken }
-      ]
+      secrets: [ { name: 'acr-password', value: acrPassword } ]
       ingress: {
         external: true
         targetPort: 8080
@@ -126,7 +130,7 @@ resource agentApps 'Microsoft.App/containerApps@2024-10-02-preview' = [for agent
             { name: 'SANDBOX_URL',   value: agent.sandboxUrl }
             { name: 'SANDBOX_TIMEOUT', value: '120' }
             { name: 'SERVER_URL',    value: serverUrl }
-            { name: 'AUTH_TOKEN',    secretRef: 'auth-token' }
+            { name: 'AUTH_TOKEN',    value: authToken }
             { name: 'PORT',          value: '8080' }
           ]
         }
@@ -146,3 +150,56 @@ output agentFqdns array = [for (agent, i) in agents: {
   fqdn: agentApps[i].properties.configuration.ingress.fqdn
   url: 'https://${agentApps[i].properties.configuration.ingress.fqdn}'
 }]
+
+// ───────────────────────── Twilio bridge (optional) ─────────────────────────
+resource twilioBridge 'Microsoft.App/containerApps@2026-03-02-preview' = if (deployTwilioBridge) {
+  name: '${namePrefix}-twilio-bridge'
+  location: location
+  tags: union(tags, { component: 'twilio-bridge' })
+  properties: {
+    environmentId: expressEnv.id
+    configuration: {
+      activeRevisionsMode: 'Single'
+      registries: [
+        {
+          server: acrLoginServer
+          username: acrUsername
+          passwordSecretRef: 'acr-password'
+        }
+      ]
+      secrets: [ { name: 'acr-password', value: acrPassword } ]
+      ingress: {
+        external: true
+        targetPort: 8080
+        transport: 'auto'
+        allowInsecure: false
+      }
+    }
+    template: {
+      containers: [
+        {
+          name: 'twilio-bridge'
+          image: '${acrLoginServer}/connect-twilio-bridge:${imageTag}'
+          resources: {
+            cpu: json('0.5')
+            memory: '1Gi'
+          }
+          env: [
+            { name: 'SERVER_URL',       value: serverUrl }
+            { name: 'AUTH_TOKEN',    value: authToken }
+            { name: 'WELCOME_GREETING', value: twilioWelcomeGreeting }
+            { name: 'TWILIO_VOICE',     value: twilioVoice }
+            { name: 'PORT',             value: '8080' }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
+      }
+    }
+  }
+}
+
+#disable-next-line BCP318
+output twilioBridgeUrl string = deployTwilioBridge ? 'https://${twilioBridge.properties.configuration.ingress.fqdn}' : ''

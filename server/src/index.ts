@@ -8,6 +8,7 @@ import { config } from './config.js';
 import { initDb, listAgents, getAgent, registerAgent, removeAgent } from './db.js';
 import { PresenceManager } from './presence.js';
 import { MultiAgentSession } from './multi-agent-session.js';
+import { handleTurn } from './api-turn.js';
 import type { Agent, ClientMessage } from './types.js';
 
 // Initialize
@@ -79,6 +80,15 @@ app.delete('/api/agents/:id', (req, res) => {
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', agents: listAgents().length, clients: clients.size });
+});
+
+// Text-only turn (used by Twilio bridge). Auth via ?token=... query (matches WS).
+app.post('/api/turn', (req, res, next) => {
+  if (req.query.token !== config.authToken) {
+    res.status(401).json({ error: 'unauthorized' });
+    return;
+  }
+  handleTurn(req, res).catch(next);
 });
 
 // ── WebSocket auth ────────────────────────────────────────

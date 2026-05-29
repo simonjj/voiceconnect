@@ -7,3 +7,7 @@ node_modules/
 **/node_modules/
 __pycache__/
 .git/
+tmp/
+infra/
+client/dist/
+server/dist/
