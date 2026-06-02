@@ -205,7 +205,7 @@ $agentSpecs = @(
   @{ Id='aria'; Name='Aria'; Voice='af_sky'; Color='#3b82f6';
      Persona='You are Aria, a warm and curious voice assistant who likes to ask clarifying questions and keep the conversation flowing.';
      Snapshot=$AriaSnapshot },
-  @{ Id='nova'; Name='Nova'; Voice='am_adam'; Color='#ec4899';
+  @{ Id='nova'; Name='Nova'; Voice='bf_emma'; Color='#ec4899';
      Persona='You are Nova, a concise and witty voice assistant who gets to the point quickly and offers a different angle than the other agents.';
      Snapshot=$NovaSnapshot }
 )
@@ -318,12 +318,12 @@ Start-Sleep -Seconds 10  # give the server a moment to be ready
 foreach ($a in $agentSpecs) {
   $fqdn = ($agentFqdns | Where-Object { $_.id -eq $a.Id }).url
   $body = @{
-    id      = $a.Id
-    name    = $a.Name
-    voice   = $a.Voice
-    color   = $a.Color
-    persona = $a.Persona
-    url     = $fqdn
+    id       = $a.Id
+    name     = $a.Name
+    voice_id = $a.Voice
+    color    = $a.Color
+    persona  = $a.Persona
+    url      = $fqdn
   } | ConvertTo-Json -Compress
   $resp = Invoke-RestMethod -Method Post `
     -Uri "$serverUrl/api/agents?token=$AuthToken" `
@@ -333,12 +333,12 @@ foreach ($a in $agentSpecs) {
 
 if ($sreUrl) {
   $body = @{
-    id      = 'sre'
-    name    = 'SRE'
-    voice   = $SreVoice
-    color   = $SreColor
-    persona = $SrePersona
-    url     = $sreUrl
+    id       = 'sre'
+    name     = 'SRE'
+    voice_id = $SreVoice
+    color    = $SreColor
+    persona  = $SrePersona
+    url      = $sreUrl
   } | ConvertTo-Json -Compress
   Invoke-RestMethod -Method Post `
     -Uri "$serverUrl/api/agents?token=$AuthToken" `
