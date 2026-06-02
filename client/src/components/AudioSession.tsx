@@ -4,27 +4,44 @@ interface Props {
   bubbles: TranscriptBubble[];
   mode: ConversationMode;
   autoDegraded: boolean;
+  /** Whether any agent door is open. Controls enabled/disabled state of the
+   *  Interrupt / Leave-all buttons; the panel itself is always rendered so
+   *  the prompt window stays visible (Phase 4 fix). */
+  hasActive: boolean;
   onInterrupt: () => void;
   onLeaveAll: () => void;
 }
 
-export function AudioSession({ bubbles, mode, autoDegraded, onInterrupt, onLeaveAll }: Props) {
+export function AudioSession({ bubbles, mode, autoDegraded, hasActive, onInterrupt, onLeaveAll }: Props) {
   return (
     <div className="audio-session">
       <div className="session-header">
         <span className="session-title">
           Mode: {mode}{autoDegraded ? ' (auto)' : ''}
+          {!hasActive && <span className="session-hint"> · Open an agent door to start</span>}
         </span>
         <div>
-          <button className="end-button" onClick={onInterrupt} style={{ marginRight: 8 }}>
+          <button
+            className="end-button"
+            onClick={onInterrupt}
+            disabled={!hasActive}
+            style={{ marginRight: 8 }}
+          >
             Interrupt
           </button>
-          <button className="end-button" onClick={onLeaveAll}>
+          <button className="end-button" onClick={onLeaveAll} disabled={!hasActive}>
             Leave all
           </button>
         </div>
       </div>
       <div className="session-content">
+        {bubbles.length === 0 && (
+          <div className="bubble-empty">
+            {hasActive
+              ? 'Listening… start talking when you are ready.'
+              : 'Transcripts and replies will appear here once an agent is active.'}
+          </div>
+        )}
         {bubbles.map((b) => (
           <div
             key={b.id}

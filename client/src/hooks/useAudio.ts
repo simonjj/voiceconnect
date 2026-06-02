@@ -5,6 +5,7 @@ export function useAudio(
   setAudioCallback: (cb: (data: ArrayBuffer, agentId: string | null) => void) => void,
   isActive: boolean,
   ttsSampleRate: number = 24000,
+  muted: boolean = false,
 ) {
   const [isMicActive, setIsMicActive] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -19,6 +20,9 @@ export function useAudio(
   // Last input sample of the previous chunk, used as the left-edge for linear
   // interpolation across chunk boundaries when we upsample to the device rate.
   const lastSampleRef = useRef<number>(0);
+  // Read inside the WS audio callback without re-binding the callback.
+  const mutedRef = useRef(muted);
+  useEffect(() => { mutedRef.current = muted; }, [muted]);
 
   const startMic = useCallback(async () => {
     try {
@@ -138,6 +142,14 @@ export function useAudio(
   // Register incoming audio handler
   useEffect(() => {
     setAudioCallback((data: ArrayBuffer, _agentId: string | null) => {
+      if (mutedRef.current) {
+        // Silently drop — and keep playback timeline aligned to "now" so we
+        // do not accumulate a backlog that bursts out the moment we unmute.
+        nextStartTimeRef.current = 0;
+        leftoverRef.current = new Uint8Array(0);
+        lastSampleRef.current = 0;
+        return;
+      }
       enqueueChunk(data);
     });
   }, [setAudioCallback, enqueueChunk]);

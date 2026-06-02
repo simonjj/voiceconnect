@@ -50,6 +50,25 @@ body {
 .dot.online { background: var(--green); }
 .mic-indicator { font-size: 1rem; }
 
+.mute-button {
+  margin-left: 12px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+.mute-button:hover { color: var(--text); border-color: var(--text-dim); }
+.mute-button.muted {
+  color: var(--red);
+  border-color: var(--red);
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+}
+
 /* ── Banners ────────────────────────────────────── */
 
 .error-banner, .knock-banner {
@@ -151,6 +170,11 @@ body {
   font-size: 1.5rem; font-weight: 700; color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
+.voiceconnect-avatar {
+  font-size: 1.9rem;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
 .voiceconnect-info { text-align: center; }
 .voiceconnect-name { display: block; font-weight: 600; font-size: 0.9rem; }
 .voiceconnect-status {
@@ -179,6 +203,25 @@ body {
   transition: opacity 0.2s;
 }
 .end-button:hover { opacity: 0.85; }
+.end-button:disabled {
+  background: #3a3a4e;
+  color: var(--text-dim);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.session-hint {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-dim);
+}
+.bubble-empty {
+  padding: 1rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+}
 
 .session-content {
   display: flex; flex-direction: column; gap: 0.75rem;

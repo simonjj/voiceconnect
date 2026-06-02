@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useAudio } from './hooks/useAudio';
 import { Hallway } from './components/Hallway';
@@ -15,7 +16,8 @@ function App() {
   } = useWebSocket(TOKEN);
 
   const hasActive = activeAgentIds.size > 0;
-  const { isMicActive } = useAudio(sendAudio, setAudioCallback, hasActive, ttsSampleRate);
+  const [muted, setMuted] = useState(false);
+  const { isMicActive } = useAudio(sendAudio, setAudioCallback, hasActive, ttsSampleRate, muted);
   const debugMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug');
 
   const handleAgentClick = (agent: Agent) => toggleAgent(agent.id);
@@ -27,12 +29,20 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>🔮 Connect</h1>
+        <h1>🔮 VoiceConnect</h1>
         <div className="status">
           <span className={`dot ${connected ? 'online' : 'offline'}`} />
           {connected ? 'Connected' : 'Reconnecting...'}
           {isMicActive && <span className="mic-indicator">🎙️</span>}
           {hasActive && <span style={{ marginLeft: 12 }}>{activeAgentIds.size} active</span>}
+          <button
+            className={`mute-button ${muted ? 'muted' : ''}`}
+            onClick={() => setMuted((m) => !m)}
+            title={muted ? 'Unmute agents' : 'Mute agents'}
+            aria-pressed={muted}
+          >
+            {muted ? '🔇 Muted' : '🔊 Sound'}
+          </button>
         </div>
       </header>
 
@@ -47,15 +57,14 @@ function App() {
           thinkingAgentIds={thinkingAgentIds}
           onAgentClick={handleAgentClick}
         />
-        {hasActive && (
-          <AudioSession
-            bubbles={bubbles}
-            mode={mode}
-            autoDegraded={autoDegraded}
-            onInterrupt={interrupt}
-            onLeaveAll={leaveAll}
-          />
-        )}
+        <AudioSession
+          bubbles={bubbles}
+          mode={mode}
+          autoDegraded={autoDegraded}
+          hasActive={hasActive}
+          onInterrupt={interrupt}
+          onLeaveAll={leaveAll}
+        />
         {debugMode && debugClips.length > 0 && (
           <section className="debug-clips">
             <h3>🔍 Audio debug clips ({debugClips.length})</h3>
