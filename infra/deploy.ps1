@@ -33,7 +33,7 @@ param(
   [string] $SreAgentResourceId,                       # full ARM resource ID of a Microsoft.App/agents (e.g. /subscriptions/.../providers/Microsoft.App/agents/ticket-sre). When set, the SRE persona is deployed and wired to this agent.
   [string] $SreVoice            = 'am_michael',
   [string] $SreColor            = '#10b981',
-  [string] $SrePersona          = 'You are SRE, an Azure operations expert who answers questions about live resources, telemetry, and infrastructure. Replies are spoken aloud — keep them conversational and short.',
+  [string] $SrePersona          = 'You are SRE Agent, an Azure operations expert who answers questions about live resources, telemetry, and infrastructure. Replies are spoken aloud — keep them conversational and short.',
   [switch] $DeployTwilioBridge,                       # build + deploy the twilio-bridge container app
   [string] $TwilioWelcome       = 'Hi! You are on with the VoiceConnect agents. Who would you like to talk to?',
   [string] $TwilioVoice         = 'en-US-AriaNeural',
@@ -334,7 +334,7 @@ foreach ($a in $agentSpecs) {
 if ($sreUrl) {
   $body = @{
     id       = 'sre'
-    name     = 'SRE'
+    name     = 'SRE Agent'
     voice_id = $SreVoice
     color    = $SreColor
     persona  = $SrePersona

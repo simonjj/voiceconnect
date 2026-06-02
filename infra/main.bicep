@@ -27,7 +27,7 @@ param sreEndpoint string = ''
 param sreDisplayName string = 'VoiceConnect'
 
 @description('Persona text shown in the SRE agent card.')
-param srePersona string = 'You are SRE, an Azure operations expert who answers questions about live resources, telemetry, and infrastructure.'
+param srePersona string = 'You are SRE Agent, an Azure operations expert who answers questions about live resources, telemetry, and infrastructure.'
 
 @description('Kokoro voice id for the SRE persona.')
 param sreVoice string = 'am_michael'
@@ -315,7 +315,7 @@ resource sreApp 'Microsoft.App/containerApps@2024-10-02-preview' = if (deploySre
           }
           env: [
             { name: 'AGENT_ID',         value: 'sre' }
-            { name: 'AGENT_NAME',       value: 'SRE' }
+            { name: 'AGENT_NAME',       value: 'SRE Agent' }
             { name: 'AGENT_VOICE',      value: sreVoice }
             { name: 'AGENT_COLOR',      value: sreColor }
             { name: 'AGENT_PERSONA',    value: srePersona }

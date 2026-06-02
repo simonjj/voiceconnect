@@ -27,19 +27,29 @@ export interface AddressDetection {
 }
 
 const ADDRESS_PREFIX_PATTERNS = [
-  // "hey claude," / "hey claude:"
-  /^\s*(?:hey|hi|hello|ok)[,]?\s+([\w-]+)\s*[,:]?\s*/i,
-  // "claude," (vocative comma — name immediately followed by comma)
-  /^\s*([\w-]+)\s*,\s*/,
+  // "hey sre agent," / "hey claude:" — capture up to two name tokens.
+  /^\s*(?:hey|hi|hello|ok)[,]?\s+([\w-]+(?:\s+[\w-]+)?)\s*[,:]?\s*/i,
+  // "sre agent," / "claude," (vocative comma)
+  /^\s*([\w-]+(?:\s+[\w-]+)?)\s*,\s*/,
   // "claude:" (name + colon)
-  /^\s*([\w-]+)\s*:\s*/,
+  /^\s*([\w-]+(?:\s+[\w-]+)?)\s*:\s*/,
 ];
 
 const BROADCAST_PREFIX_PATTERN =
   /^\s*(?:hey\s+|ok\s+)?(team|both|everyone|everybody|all of you|you all|panel)\s*[,:]?\s*/i;
 
+/**
+ * Per-agent.id ASR aliases. These are extra strings the matcher accepts in
+ * addition to the agent's display name and id. Useful when:
+ *   - the brand name is hard for Whisper to transcribe (e.g. acronyms)
+ *   - the agent has been rebranded but should still answer to legacy names
+ */
+const AGENT_ASR_ALIASES: Record<string, string[]> = {
+  sre: ['sage', 'sre', 's r e', 'es are ee', 'essary', 'sri agent', 'sri'],
+};
+
 function normalize(s: string): string {
-  return s.trim().toLowerCase();
+  return s.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
 /**
@@ -62,28 +72,57 @@ export function detectAddressees(transcript: string, activeAgents: Agent[]): Add
     };
   }
 
-  // Build a name → agent index for O(1) lookup. Match on both name and id (lowercased).
+  // Build a name → agent index for O(1) lookup. Match on display name, id,
+  // and any per-agent ASR aliases (lowercased, whitespace-collapsed).
   const byName = new Map<string, Agent>();
   for (const agent of activeAgents) {
     byName.set(normalize(agent.name), agent);
     byName.set(normalize(agent.id), agent);
+    const aliases = AGENT_ASR_ALIASES[agent.id] ?? [];
+    for (const alias of aliases) byName.set(normalize(alias), agent);
   }
 
-  // 2. Try address-prefix patterns in order.
+  // 2. Try address-prefix patterns in order. For each pattern, prefer the
+  // longest captured form (2 tokens), and fall back to the first token only.
   for (const pattern of ADDRESS_PREFIX_PATTERNS) {
     const match = text.match(pattern);
     if (!match) continue;
-    const candidate = normalize(match[1]);
+    const captured = match[1];
+    const tokens = captured.trim().split(/\s+/);
 
-    // Don't accept "hey there", "ok now", etc. — only when the captured token
-    // matches a known agent name/id.
-    const agent = byName.get(candidate);
-    if (!agent) continue;
+    // Try the full capture first (e.g. "sre agent"), then just the first
+    // token (e.g. "claude"). This lets single-word vocatives still work
+    // even though the pattern allows up to two tokens.
+    const candidates = tokens.length > 1 ? [normalize(captured), normalize(tokens[0])] : [normalize(captured)];
+
+    let agent: Agent | undefined;
+    let matchedCandidate: string | undefined;
+    for (const c of candidates) {
+      const found = byName.get(c);
+      if (found) {
+        agent = found;
+        matchedCandidate = c;
+        break;
+      }
+    }
+    if (!agent || !matchedCandidate) continue;
+
+    // If we matched only the first token, recompute the prefix length so we
+    // don't strip a trailing word that wasn't part of the address.
+    let prefixLen = match[0].length;
+    if (matchedCandidate === normalize(tokens[0]) && tokens.length > 1) {
+      // Re-match against the same pattern but with a single-token capture so
+      // cleanedText excludes only "hey claude," and not the following word.
+      const singleTokenSrc = pattern.source.replace('([\\w-]+(?:\\s+[\\w-]+)?)', '([\\w-]+)');
+      const singleTokenPattern = new RegExp(singleTokenSrc, pattern.flags);
+      const m2 = text.match(singleTokenPattern);
+      if (m2) prefixLen = m2[0].length;
+    }
 
     return {
       addressees: [agent],
       isBroadcast: false,
-      cleanedText: text.slice(match[0].length).trim(),
+      cleanedText: text.slice(prefixLen).trim(),
     };
   }
 
