@@ -11,3 +11,5 @@ tmp/
 infra/
 client/dist/
 server/dist/
+
+server/connect-store.json
