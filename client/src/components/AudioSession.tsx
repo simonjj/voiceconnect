@@ -42,7 +42,7 @@ export function AudioSession({ bubbles, mode, autoDegraded, hasActive, onInterru
               : 'Transcripts and replies will appear here once an agent is active.'}
           </div>
         )}
-        {bubbles.map((b) => (
+        {[...bubbles].reverse().map((b) => (
           <div
             key={b.id}
             className={`bubble ${b.role === 'user' ? 'user-bubble' : 'agent-bubble'}`}

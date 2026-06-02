@@ -11,23 +11,32 @@ interface Props {
   onClick: () => void;
 }
 
-// Per-agent emoji avatars. Matched first by id, then by name (so 'sre' and
-// the older display 'Sage' both pick up the wrench). Falls back to the first
-// letter of the name for unknown agents.
-const AVATAR_BY_ID: Record<string, string> = {
-  aria: '🌸',
-  nova: '⚡',
-  sre: '🛠️',
-  sage: '🛠️',
+// Per-agent image avatars served from /avatars/ in the bundle. Falls back
+// to an emoji, then to the first letter of the agent name for unknowns.
+const IMAGE_AVATAR_BY_ID: Record<string, string> = {
+  aria: '/avatars/aria.png',
+  nova: '/avatars/nova.png',
+  sre: '/avatars/sre.jpg',
+  sage: '/avatars/sre.jpg',
+};
+
+const EMOJI_AVATAR_BY_ID: Record<string, string> = {
   echo: '🔊',
 };
 
-function avatarFor(agent: Agent): { glyph: string; isEmoji: boolean } {
-  const idKey = agent.id?.toLowerCase();
-  const nameKey = agent.name?.toLowerCase();
-  const glyph = AVATAR_BY_ID[idKey] || (nameKey ? AVATAR_BY_ID[nameKey] : undefined);
-  if (glyph) return { glyph, isEmoji: true };
-  return { glyph: agent.name.charAt(0).toUpperCase() || '?', isEmoji: false };
+type AvatarChoice =
+  | { kind: 'image'; src: string }
+  | { kind: 'emoji'; glyph: string }
+  | { kind: 'initial'; glyph: string };
+
+function avatarFor(agent: Agent): AvatarChoice {
+  const idKey = agent.id?.toLowerCase() ?? '';
+  const nameKey = agent.name?.toLowerCase() ?? '';
+  const src = IMAGE_AVATAR_BY_ID[idKey] || IMAGE_AVATAR_BY_ID[nameKey];
+  if (src) return { kind: 'image', src };
+  const emoji = EMOJI_AVATAR_BY_ID[idKey] || EMOJI_AVATAR_BY_ID[nameKey];
+  if (emoji) return { kind: 'emoji', glyph: emoji };
+  return { kind: 'initial', glyph: agent.name.charAt(0).toUpperCase() || '?' };
 }
 
 export function AgentVoiceConnect({ agent, isActive, isSpeaking, isThinking, onClick }: Props) {
@@ -39,7 +48,7 @@ export function AgentVoiceConnect({ agent, isActive, isSpeaking, isThinking, onC
     isSpeaking ? 'speaking' : '',
     isThinking ? 'thinking' : '',
   ].filter(Boolean).join(' ');
-  const { glyph, isEmoji } = avatarFor(agent);
+  const avatar = avatarFor(agent);
 
   return (
     <div
@@ -49,7 +58,13 @@ export function AgentVoiceConnect({ agent, isActive, isSpeaking, isThinking, onC
       title={`${agent.name}${isThinking ? ' (thinking...)' : isSpeaking ? ' (speaking)' : ''}`}
     >
       <div className="voiceconnect-circle">
-        <span className={isEmoji ? 'voiceconnect-avatar' : 'voiceconnect-initial'}>{glyph}</span>
+        {avatar.kind === 'image' ? (
+          <img className="voiceconnect-avatar-img" src={avatar.src} alt={agent.name} />
+        ) : (
+          <span className={avatar.kind === 'emoji' ? 'voiceconnect-avatar' : 'voiceconnect-initial'}>
+            {avatar.glyph}
+          </span>
+        )}
       </div>
       <div className="voiceconnect-info">
         <span className="voiceconnect-name">{agent.name}</span>
