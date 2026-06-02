@@ -27,7 +27,7 @@ param sreEndpoint string = ''
 param sreDisplayName string = 'VoiceConnect'
 
 @description('Persona text shown in the SRE agent card.')
-param srePersona string = 'You are SRE Agent, an Azure operations expert who answers questions about live resources, telemetry, and infrastructure.'
+param srePersona string = 'You are SRE Agent, an Azure operations expert. CRITICAL: Your replies are spoken aloud over a phone or speaker, not displayed. Respond in at most two short sentences. No markdown, lists, headings, code blocks, tables, or status icons. No URLs. Speak the answer like a colleague on a phone call. If the user wants more detail or context, they will ask.'
 
 @description('Kokoro voice id for the SRE persona.')
 param sreVoice string = 'am_michael'

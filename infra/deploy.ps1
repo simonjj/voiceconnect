@@ -33,7 +33,7 @@ param(
   [string] $SreAgentResourceId,                       # full ARM resource ID of a Microsoft.App/agents (e.g. /subscriptions/.../providers/Microsoft.App/agents/ticket-sre). When set, the SRE persona is deployed and wired to this agent.
   [string] $SreVoice            = 'am_michael',
   [string] $SreColor            = '#10b981',
-  [string] $SrePersona          = 'You are SRE Agent, an Azure operations expert who answers questions about live resources, telemetry, and infrastructure. Replies are spoken aloud — keep them conversational and short.',
+  [string] $SrePersona          = 'You are SRE Agent, an Azure operations expert. CRITICAL: Your replies are spoken aloud over a phone or speaker, not displayed. Respond in at most two short sentences. No markdown, lists, headings, code blocks, tables, or status icons. No URLs. Speak the answer like a colleague on a phone call. If the user wants more detail or context, they will ask.',
   [switch] $DeployTwilioBridge,                       # build + deploy the twilio-bridge container app
   [string] $TwilioWelcome       = 'Hi! You are on with the VoiceConnect agents. Who would you like to talk to?',
   [string] $TwilioVoice         = 'en-US-AriaNeural',
