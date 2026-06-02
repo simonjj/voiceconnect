@@ -11,6 +11,7 @@
  *     speaking so the session can mark their history entries as interrupted.
  */
 import { config } from './config.js';
+import { voicify } from './voicify.js';
 import type { Agent } from './types.js';
 
 interface SessionLike {
@@ -84,6 +85,10 @@ export class TtsQueue {
   }
 
   private async synthesizeAndSend(agent: Agent, text: string): Promise<void> {
+    // Strip markdown / URLs / code so TTS does not literally speak
+    // "asterisk asterisk" or read out a full URL.
+    const spoken = voicify(text);
+    if (!spoken) return;
     const seq = ++this.sequence;
     const ac = new AbortController();
     let response: Response;
@@ -91,7 +96,7 @@ export class TtsQueue {
       response = await fetch(`${config.ttsUrl}/synthesize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice_id: agent.voice_id, speed: 1.0 }),
+        body: JSON.stringify({ text: spoken, voice_id: agent.voice_id, speed: 1.0 }),
         signal: ac.signal,
       });
     } catch (e: any) {
@@ -111,7 +116,7 @@ export class TtsQueue {
       type: 'agent_speaking_start',
       agent_id: agent.id,
       agent_name: agent.name,
-      text,
+      text: spoken,
       sample_rate: sampleRate,
       sequence: seq,
     });

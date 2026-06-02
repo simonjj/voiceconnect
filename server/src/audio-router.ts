@@ -1,5 +1,6 @@
 import WebSocket from 'ws';
 import { config } from './config.js';
+import { voicify } from './voicify.js';
 import type { Agent } from './types.js';
 
 export class AudioRouter {
@@ -146,13 +147,15 @@ export class AudioRouter {
 
   private async synthesizeAndSend(text: string): Promise<void> {
     if (!this.isActive) return;
-    this.onAgentSpeaking(text);
+    const spoken = voicify(text);
+    if (!spoken) return;
+    this.onAgentSpeaking(spoken);
 
     try {
       const response = await fetch(`${config.ttsUrl}/synthesize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice_id: this.agent.voice_id, speed: 1.0 }),
+        body: JSON.stringify({ text: spoken, voice_id: this.agent.voice_id, speed: 1.0 }),
       });
 
       if (!response.ok || !response.body) {
