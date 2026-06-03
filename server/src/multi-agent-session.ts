@@ -26,7 +26,7 @@ import { TtsQueue } from './tts-queue.js';
 import type { Agent, HistoryMessage } from './types.js';
 
 const HISTORY_CAP = 30;
-const ADDRESSED_ONLY_AT_N = 3; // Q3 auto-degrade threshold.
+const ADDRESSED_ONLY_AT_N = 4; // Q3 auto-degrade threshold (raised from 3 — at 3 agents we keep addressed-with-fallback + sticky last-speaker).
 
 export interface SessionCallbacks {
   send: (msg: any) => void;        // JSON msg → client

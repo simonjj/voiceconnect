@@ -164,7 +164,15 @@ export function resolveTargets(
 
   // addressed-with-fallback
   if (detection.addressees.length > 0) return detection.addressees;
-  return [...activeAgents];
+  // Sticky last-speaker: route un-addressed turns to whoever spoke last,
+  // matching phone-call intuition and avoiding a 3-way reply chorus.
+  if (lastSpeakerId) {
+    const last = activeAgents.find((a) => a.id === lastSpeakerId);
+    if (last) return [last];
+  }
+  // Cold start (no last speaker yet): pick the first active agent rather
+  // than fan out to all, so we never silently drop the very first turn.
+  return activeAgents.slice(0, 1);
 }
 
 /**

@@ -35,7 +35,7 @@ import type { Agent, HistoryMessage } from './types.js';
 
 const HISTORY_CAP = 30;
 const SESSION_TTL_MS = 30 * 60 * 1000;
-const ADDRESSED_ONLY_AT_N = 3;
+const ADDRESSED_ONLY_AT_N = 4;
 
 interface TurnState {
   history: HistoryMessage[];
