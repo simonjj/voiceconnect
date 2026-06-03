@@ -21,6 +21,12 @@ interface SessionLike {
 
 const SENTENCE_END = /[.!?]\s*$/;
 const MAX_BUFFER = 200;
+// Per-turn cap on how many *spoken* characters we'll synthesize for one agent.
+// This is a guardrail on top of upstream prompting (e.g. SRE_VOICE_INSTRUCTION).
+// Once we exceed the budget, remaining text deltas are still forwarded to the
+// UI as `text` events but skipped for TTS so the listener doesn't get a 60-second
+// monologue. Override via VOICE_TTS_BUDGET_CHARS (e.g. 0 disables).
+const VOICE_TTS_BUDGET = Number(process.env.VOICE_TTS_BUDGET_CHARS ?? '600');
 
 export class TtsQueue {
   private currentlySpeakingAgentIds: Set<string> = new Set();
@@ -44,12 +50,25 @@ export class TtsQueue {
   ): Promise<string | null> {
     let sentenceBuffer = '';
     let fullReply = '';
+    let spokenChars = 0;
+    let budgetExceededLogged = false;
 
     const flushSentence = async (): Promise<void> => {
       const text = sentenceBuffer.trim();
       sentenceBuffer = '';
       if (!text) return;
       if (turn !== currentTurn()) return;
+      if (VOICE_TTS_BUDGET > 0 && spokenChars >= VOICE_TTS_BUDGET) {
+        if (!budgetExceededLogged) {
+          console.log(
+            `[TtsQueue] agent=${agent.id} hit voice budget ${VOICE_TTS_BUDGET}, ` +
+            `dropping remaining sentences from TTS (UI still gets full text).`,
+          );
+          budgetExceededLogged = true;
+        }
+        return;
+      }
+      spokenChars += text.length;
       await this.synthesizeAndSend(agent, text);
     };
 

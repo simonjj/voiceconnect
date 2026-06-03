@@ -3,6 +3,11 @@ import { config } from './config.js';
 import { voicify } from './voicify.js';
 import type { Agent } from './types.js';
 
+// Per-turn cap on how many *spoken* characters we'll synthesize. Mirrors the
+// TtsQueue guardrail so single-agent (audio-router) and multi-agent paths
+// behave the same. UI still gets the full text via onAgentSpeaking().
+const VOICE_TTS_BUDGET = Number(process.env.VOICE_TTS_BUDGET_CHARS ?? '600');
+
 export class AudioRouter {
   private clientWs: WebSocket;
   private sttWs: WebSocket | null = null;
@@ -106,6 +111,28 @@ export class AudioRouter {
       const decoder = new TextDecoder();
       let buffer = '';
       let sentenceBuffer = '';
+      let spokenChars = 0;
+      let budgetExceededLogged = false;
+
+      const flushSentence = async (): Promise<void> => {
+        const t = sentenceBuffer.trim();
+        sentenceBuffer = '';
+        if (!t) return;
+        if (VOICE_TTS_BUDGET > 0 && spokenChars >= VOICE_TTS_BUDGET) {
+          if (!budgetExceededLogged) {
+            console.log(
+              `[AudioRouter] agent=${this.agent.id} hit voice budget ${VOICE_TTS_BUDGET}, ` +
+              `dropping remaining sentences from TTS.`,
+            );
+            budgetExceededLogged = true;
+          }
+          // Surface text to UI even when we stop speaking, so user sees the rest.
+          this.onAgentSpeaking(t);
+          return;
+        }
+        spokenChars += t.length;
+        await this.synthesizeAndSend(t);
+      };
 
       while (true) {
         const { done, value } = await reader.read();
@@ -122,12 +149,11 @@ export class AudioRouter {
             if (event.type === 'text') {
               sentenceBuffer += event.content;
               if (/[.!?]\s*$/.test(sentenceBuffer) || sentenceBuffer.length > 200) {
-                await this.synthesizeAndSend(sentenceBuffer.trim());
-                sentenceBuffer = '';
+                await flushSentence();
               }
             } else if (event.type === 'done') {
               if (sentenceBuffer.trim()) {
-                await this.synthesizeAndSend(sentenceBuffer.trim());
+                await flushSentence();
               }
             } else if (event.type === 'error') {
               this.onError(event.content);

@@ -61,3 +61,26 @@ export function voicify(s: string): string {
   t = t.replace(/\s+([,.;:!?])/g, '$1').replace(/([,.;:!?])\1+/g, '$1');
   return t;
 }
+
+/**
+ * voiceCap — cap a voicify'd string at a sentence boundary so a single TTS
+ * utterance never runs on for paragraphs. Used as a guardrail on top of
+ * upstream prompting (e.g. SRE_VOICE_INSTRUCTION).
+ *
+ * If `s` is shorter than `maxChars`, returns it unchanged. Otherwise returns
+ * the longest prefix that ends on a sentence terminator (.!?) and is <=
+ * `maxChars`. Falls back to a hard char cut at `maxChars` if no boundary is
+ * found, appending an ellipsis. The full original text is preserved by the
+ * caller for UI/log surfaces.
+ */
+export function voiceCap(s: string, maxChars = 400): string {
+  const t = String(s ?? '');
+  if (t.length <= maxChars) return t;
+  // Prefer the last sentence terminator within the window.
+  const window = t.slice(0, maxChars);
+  const m = window.match(/^[\s\S]*[.!?](?=\s|$)/);
+  if (m && m[0].length >= maxChars * 0.4) return m[0].trim();
+  // Fall back to a word-boundary cut + ellipsis.
+  const cut = t.slice(0, maxChars).replace(/\s+\S*$/, '').trim();
+  return cut + '…';
+}
