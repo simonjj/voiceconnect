@@ -37,6 +37,9 @@ param(
   [switch] $DeployTwilioBridge,                       # build + deploy the twilio-bridge container app
   [string] $TwilioWelcome       = 'Hi! You are on with the VoiceConnect agents. Who would you like to talk to?',
   [string] $TwilioVoice         = 'en-US-AriaNeural',
+  [string] $AppInsightsName     = 'voiceconnect-sre-e8c92b09-bee0-app-insights',
+  [string] $AppInsightsResourceGroup,                  # default: same as $rgMain
+  [string] $AppInsightsConnectionString,               # default: looked up from $AppInsightsName
   [switch] $SkipImageBuild,
   [switch] $RebuildServerOnly,
   [int]    $ResourceGroupSuffix   = 0,                  # if >0, reuse existing RG suffix instead of picking next
@@ -166,6 +169,20 @@ do {
 if ($envState -ne 'Succeeded') { Fail "Managed env failed to provision (state=$envState)" }
 Done "env $namePrefix-env ready"
 
+# ───────────────────────── Application Insights connection string ─────────────────────────
+if (-not $AppInsightsConnectionString) {
+  $aiRg = if ($AppInsightsResourceGroup) { $AppInsightsResourceGroup } else { $rgMain }
+  Say "Looking up Application Insights '$AppInsightsName' in '$aiRg'"
+  $aiConn = az monitor app-insights component show --app $AppInsightsName -g $aiRg --query connectionString -o tsv 2>$null
+  if ($aiConn) {
+    $AppInsightsConnectionString = $aiConn
+    Done "AI conn string resolved"
+  } else {
+    Say "AI '$AppInsightsName' not found; telemetry will be disabled (set -AppInsightsConnectionString to override)" 'Yellow'
+    $AppInsightsConnectionString = ''
+  }
+}
+
 # ───────────────────────── Standard env deploy (main.bicep) ─────────────────────────
 Say 'Deploying main.bicep (env + server + STT + TTS + sandbox group)'
 $mainOut = az deployment group create `
@@ -180,6 +197,7 @@ $mainOut = az deployment group create `
      sreVoice="$SreVoice" `
      sreColor="$SreColor" `
      srePersona="$SrePersona" `
+     appInsightsConnectionString="$AppInsightsConnectionString" `
   --query properties.outputs -o json | ConvertFrom-Json
 if (-not $mainOut) { Fail 'main.bicep deployment did not return outputs' }
 $serverUrl       = $mainOut.serverUrl.value
@@ -297,6 +315,7 @@ $paramsFile = New-TemporaryFile
     deployTwilioBridge   = @{ value = [bool]$DeployTwilioBridge }
     twilioWelcomeGreeting = @{ value = $TwilioWelcome }
     twilioVoice    = @{ value = $TwilioVoice }
+    appInsightsConnectionString = @{ value = $AppInsightsConnectionString }
   }
 } | ConvertTo-Json -Depth 10 | Set-Content -Encoding utf8 $paramsFile
 

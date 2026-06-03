@@ -36,6 +36,20 @@ from pydantic import BaseModel
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("sandbox-agent")
 
+# Application Insights — Tier 1 auto-instrumentation. Must run before FastAPI()
+# is constructed so the OTel FastAPI instrumentor can patch it.
+_ai_conn = os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING", "").strip()
+if _ai_conn:
+    try:
+        from azure.monitor.opentelemetry import configure_azure_monitor
+        os.environ.setdefault("OTEL_SERVICE_NAME", os.environ.get("AI_CLOUD_ROLE", f"orbconnect-agent-{os.environ.get('AGENT_ID', 'agent')}"))
+        configure_azure_monitor(connection_string=_ai_conn)
+        logger.info("Application Insights initialized as %s", os.environ["OTEL_SERVICE_NAME"])
+    except Exception as e:  # pragma: no cover
+        logger.warning("Application Insights init failed: %s", e)
+else:
+    logger.info("APPLICATIONINSIGHTS_CONNECTION_STRING not set; telemetry disabled")
+
 AGENT_ID = os.environ.get("AGENT_ID", "agent")
 AGENT_NAME = os.environ.get("AGENT_NAME", "Agent")
 AGENT_VOICE = os.environ.get("AGENT_VOICE", "af_sky")

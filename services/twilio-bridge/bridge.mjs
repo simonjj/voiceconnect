@@ -28,6 +28,7 @@
 //   PORT                listen port (default 8080)
 //   RESUME_WINDOW_MS    caller-resume window (default 900000 = 15 min, 0 disables)
 
+import "./telemetry.mjs";
 import express from "express";
 import { createServer } from "node:http";
 import { WebSocketServer } from "ws";

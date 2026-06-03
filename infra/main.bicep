@@ -35,6 +35,10 @@ param sreVoice string = 'am_michael'
 @description('Hex color for the SRE persona.')
 param sreColor string = '#10b981'
 
+@description('Application Insights connection string. When non-empty, all container apps emit telemetry to this AI instance.')
+@secure()
+param appInsightsConnectionString string = ''
+
 var deploySre = !empty(sreEndpoint)
 
 var tags = {
@@ -143,6 +147,10 @@ resource sttApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
               failureThreshold: 40
             }
           ]
+          env: [
+            { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
+            { name: 'AI_CLOUD_ROLE', value: 'orbconnect-stt' }
+          ]
         }
       ]
       scale: {
@@ -199,6 +207,10 @@ resource ttsApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
               timeoutSeconds: 10
               failureThreshold: 30
             }
+          ]
+          env: [
+            { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
+            { name: 'AI_CLOUD_ROLE', value: 'orbconnect-tts' }
           ]
         }
       ]
@@ -260,6 +272,8 @@ resource serverApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
             { name: 'STT_URL', value: 'wss://${sttApp.properties.configuration.ingress.fqdn}' }
             { name: 'TTS_URL', value: 'https://${ttsApp.properties.configuration.ingress.fqdn}' }
             { name: 'PORT', value: '3000' }
+            { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
+            { name: 'AI_CLOUD_ROLE', value: 'orbconnect-server' }
           ]
         }
       ]
@@ -325,6 +339,8 @@ resource sreApp 'Microsoft.App/containerApps@2024-10-02-preview' = if (deploySre
             { name: 'SERVER_URL',       value: 'https://${serverApp.properties.configuration.ingress.fqdn}' }
             { name: 'AUTH_TOKEN',       secretRef: 'auth-token' }
             { name: 'PORT',             value: '8080' }
+            { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
+            { name: 'AI_CLOUD_ROLE',    value: 'orbconnect-sre' }
           ]
         }
       ]

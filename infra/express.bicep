@@ -48,6 +48,10 @@ param twilioWelcomeGreeting string = 'Hi! You are on with the VoiceConnect agent
 @description('Twilio ConversationRelay voice id.')
 param twilioVoice string = 'en-US-AriaNeural'
 
+@description('Application Insights connection string. When non-empty, agent + bridge container apps emit telemetry.')
+@secure()
+param appInsightsConnectionString string = ''
+
 @description('List of agents. Each gets its own Express container app and is wired to a dedicated sandbox.')
 param agents array = [
   {
@@ -132,6 +136,8 @@ resource agentApps 'Microsoft.App/containerApps@2026-03-02-preview' = [for agent
             { name: 'SERVER_URL',    value: serverUrl }
             { name: 'AUTH_TOKEN',    value: authToken }
             { name: 'PORT',          value: '8080' }
+            { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
+            { name: 'AI_CLOUD_ROLE', value: 'orbconnect-agent-${agent.id}' }
           ]
         }
       ]
@@ -190,6 +196,8 @@ resource twilioBridge 'Microsoft.App/containerApps@2026-03-02-preview' = if (dep
             { name: 'WELCOME_GREETING', value: twilioWelcomeGreeting }
             { name: 'TWILIO_VOICE',     value: twilioVoice }
             { name: 'PORT',             value: '8080' }
+            { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
+            { name: 'AI_CLOUD_ROLE',    value: 'orbconnect-twilio-bridge' }
           ]
         }
       ]

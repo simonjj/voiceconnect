@@ -8,6 +8,7 @@ Protocol:
   Headers: X-Sample-Rate, X-Audio-Format
 """
 import logging
+import os
 import numpy as np
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
@@ -16,6 +17,20 @@ from kokoro import KPipeline
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("tts")
+
+# Application Insights — Tier 1 auto-instrumentation. Must run before FastAPI()
+# is constructed so the OTel FastAPI instrumentor can patch it.
+_ai_conn = os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING", "").strip()
+if _ai_conn:
+    try:
+        from azure.monitor.opentelemetry import configure_azure_monitor
+        os.environ.setdefault("OTEL_SERVICE_NAME", os.environ.get("AI_CLOUD_ROLE", "orbconnect-tts"))
+        configure_azure_monitor(connection_string=_ai_conn)
+        logger.info("Application Insights initialized as %s", os.environ["OTEL_SERVICE_NAME"])
+    except Exception as e:  # pragma: no cover
+        logger.warning("Application Insights init failed: %s", e)
+else:
+    logger.info("APPLICATIONINSIGHTS_CONNECTION_STRING not set; telemetry disabled")
 
 app = FastAPI(title="Connect TTS Service")
 

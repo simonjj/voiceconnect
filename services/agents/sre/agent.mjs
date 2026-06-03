@@ -34,6 +34,7 @@
 //   role:"assistant" + smt:other named           → tool args/results, suppress
 //   role:"assistant" + smt:null + $type:"text"   → FINAL ANSWER → stream as {type:text}
 //   role:"assistant" + len:0 + smt:null          → end-of-message terminator
+import "./telemetry.mjs";
 import express from "express";
 import { DefaultAzureCredential } from "@azure/identity";
 import signalR from "@microsoft/signalr";

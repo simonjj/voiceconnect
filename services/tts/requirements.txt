@@ -7,3 +7,4 @@ soundfile>=0.12.0
 # Pin transformers — the latest wheel imports torch.distributed.tensor.device_mesh
 # which the pytorch:24.09-py3 base image (torch 2.5) does not ship.
 transformers>=4.45,<4.50
+azure-monitor-opentelemetry==1.6.4
