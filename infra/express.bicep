@@ -122,8 +122,8 @@ resource agentApps 'Microsoft.App/containerApps@2026-03-02-preview' = [for agent
           name: 'agent'
           image: '${acrLoginServer}/connect-sandbox-agent:${imageTag}'
           resources: {
-            cpu: json('0.5')
-            memory: '1Gi'
+            cpu: json('1.0')
+            memory: '2Gi'
           }
           env: [
             { name: 'AGENT_ID',      value: agent.id }
@@ -187,8 +187,8 @@ resource twilioBridge 'Microsoft.App/containerApps@2026-03-02-preview' = if (dep
           name: 'twilio-bridge'
           image: '${acrLoginServer}/connect-twilio-bridge:${imageTag}'
           resources: {
-            cpu: json('0.5')
-            memory: '1Gi'
+            cpu: json('2.0')
+            memory: '4Gi'
           }
           env: [
             { name: 'SERVER_URL',       value: serverUrl }

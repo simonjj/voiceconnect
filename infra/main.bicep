@@ -264,8 +264,8 @@ resource serverApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
           name: 'server'
           image: '${acrLoginServer}/connect-server:${imageTag}'
           resources: {
-            cpu: json('1.0')
-            memory: '2Gi'
+            cpu: json('2.0')
+            memory: '4Gi'
           }
           env: [
             { name: 'AUTH_TOKEN', secretRef: 'auth-token' }
@@ -324,8 +324,8 @@ resource sreApp 'Microsoft.App/containerApps@2024-10-02-preview' = if (deploySre
           name: 'sre'
           image: '${acrLoginServer}/connect-sre-agent:${imageTag}'
           resources: {
-            cpu: json('0.5')
-            memory: '1Gi'
+            cpu: json('1.0')
+            memory: '2Gi'
           }
           env: [
             { name: 'AGENT_ID',         value: 'sre' }
