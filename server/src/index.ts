@@ -10,6 +10,7 @@ import { initDb, listAgents, getAgent, registerAgent, removeAgent } from './db.j
 import { PresenceManager } from './presence.js';
 import { MultiAgentSession } from './multi-agent-session.js';
 import { handleTurn } from './api-turn.js';
+import { HealthMonitor } from './health-monitor.js';
 import type { Agent, ClientMessage } from './types.js';
 
 // Initialize
@@ -36,6 +37,13 @@ const clientSessions = new Map<WebSocket, MultiAgentSession>();
 const presence = new PresenceManager((agent: Agent) => {
   broadcast({ type: 'agent_update', agent });
 });
+
+// Background health monitor — polls each registered agent's /healthz every
+// ~10s and pushes state-change events to all connected websocket clients.
+const healthMonitor = new HealthMonitor((agent_id, health) => {
+  broadcast({ type: 'agent_health', agent_id, health });
+});
+healthMonitor.start();
 
 function broadcast(msg: any): void {
   const data = JSON.stringify(msg);
@@ -110,6 +118,7 @@ wss.on('connection', (ws, req) => {
   console.log('[WS] Client connected');
   clients.add(ws);
   sendJson(ws, { type: 'agents', agents: listAgents() });
+  sendJson(ws, { type: 'agents_health', health: healthMonitor.getAll() });
 
   // Lazily-instantiated multi-agent session for this WS.
   function getOrCreateSession(): MultiAgentSession {

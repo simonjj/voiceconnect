@@ -26,6 +26,22 @@ export interface AgentCard {
 
 export type ConversationMode = 'addressed-only' | 'addressed-with-fallback' | 'single';
 
+/**
+ * Health snapshot for a registered agent. Updated by the server-side
+ * HealthMonitor every ~10s and pushed to clients on state change.
+ *  - 'ok'        → /healthz returned 2xx within budget, sandbox reachable
+ *  - 'degraded'  → /healthz 2xx but the underlying sandbox is unreachable
+ *                  (e.g. auto-suspended). The relay is up but a real /chat
+ *                  call would fail until the sandbox resumes.
+ *  - 'down'      → /healthz timed out or returned non-2xx
+ */
+export interface AgentHealth {
+  state: 'ok' | 'degraded' | 'down';
+  latency_ms: number;
+  last_error?: string;
+  checked_at: number;
+}
+
 // WebSocket messages: browser → server
 export type ClientMessage =
   // Phase 1 (kept for backward compat)
@@ -55,6 +71,8 @@ export type ServerMessage =
   | { type: 'error'; message: string }
   | { type: 'tts_config'; sample_rate: number }
   | { type: 'mode'; mode: ConversationMode; auto_degraded: boolean }
+  | { type: 'agents_health'; health: Record<string, AgentHealth> }
+  | { type: 'agent_health'; agent_id: string; health: AgentHealth }
   | { type: 'interrupted'; agent_ids: string[] };
 
 /**
