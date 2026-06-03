@@ -30,7 +30,7 @@ param(
   [string] $GitHubToken,                              # default: gh auth token
   [string] $AriaSnapshot,                             # if set, restore aria from this snapshot
   [string] $NovaSnapshot,                             # if set, restore nova from this snapshot
-  [string] $SreAgentResourceId,                       # full ARM resource ID of a Microsoft.App/agents (e.g. /subscriptions/.../providers/Microsoft.App/agents/ticket-sre). When set, the SRE persona is deployed and wired to this agent.
+  [string] $SreAgentResourceId,                       # full ARM resource ID of a Microsoft.App/agents (e.g. /subscriptions/.../providers/Microsoft.App/agents/voiceconnect-sre). When set, the SRE persona is deployed and wired to this agent.
   [string] $SreVoice            = 'am_michael',
   [string] $SreColor            = '#10b981',
   [string] $SrePersona          = 'You are SRE Agent, an Azure operations expert. CRITICAL: Your replies are spoken aloud over a phone or speaker, not displayed. Respond in at most two short sentences. No markdown, lists, headings, code blocks, tables, or status icons. No URLs. Speak the answer like a colleague on a phone call. If the user wants more detail or context, they will ask.',
@@ -222,57 +222,64 @@ if (-not $sbgExists) {
 $agentSpecs = @(
   @{ Id='aria'; Name='Aria'; Voice='af_sky'; Color='#3b82f6';
      Persona='You are Aria, a warm and curious voice assistant who likes to ask clarifying questions and keep the conversation flowing.';
-     Snapshot=$AriaSnapshot },
+     Snapshot=$AriaSnapshot; NoConnectors=$true },
   @{ Id='nova'; Name='Nova'; Voice='bf_emma'; Color='#ec4899';
      Persona='You are Nova, a concise and witty voice assistant who gets to the point quickly and offers a different angle than the other agents.';
-     Snapshot=$NovaSnapshot }
+     Snapshot=$NovaSnapshot; NoConnectors=$false }
 )
 
 $bootstrapScript = "$PSScriptRoot/sandbox-bootstrap.sh"
 $wrapperPy       = "$SourceRoot/services/agents/sandbox/sandbox_wrapper.py"
-if (-not (Test-Path $wrapperPy)) { Fail "sandbox_wrapper.py not found at $wrapperPy" }
+$newSandboxHelper = "$PSScriptRoot/New-CopilotSandbox.ps1"
+if (-not (Test-Path $wrapperPy))       { Fail "sandbox_wrapper.py not found at $wrapperPy" }
+if (-not (Test-Path $newSandboxHelper)) { Fail "New-CopilotSandbox.ps1 not found at $newSandboxHelper" }
 
 $sandboxUrls = @{}
 foreach ($a in $agentSpecs) {
   $sbId = $null
 
   if ($a.Snapshot) {
+    # Snapshot path: snapshots preserve gatewayConnections, so this still works for
+    # captured demo state. We use the aca CLI here because the data-plane preset
+    # PUT does not accept a snapshot id.
     Say "Restoring sandbox '$($a.Id)' from snapshot '$($a.Snapshot)'"
     $created = & $aca -g $rgMain --sandbox-group $sandboxGroup sandbox create `
       --label "agent-id=$($a.Id)" `
       --snapshot $a.Snapshot 2>&1 | Out-String
     if ($LASTEXITCODE -ne 0) { Fail "sandbox restore failed: $created" }
-    # Find newly created sandbox by label
     $list = & $aca -g $rgMain --sandbox-group $sandboxGroup sandbox list -o json 2>$null | ConvertFrom-Json
     $sbId = ($list | Where-Object { $_.labels.'agent-id' -eq $a.Id } | Select-Object -First 1).id
     Done "sandbox $sbId restored"
-  } else {
-    Say "Provisioning fresh sandbox '$($a.Id)'"
-    & $aca -g $rgMain --sandbox-group $sandboxGroup sandbox create --label "agent-id=$($a.Id)" 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) { Fail "sandbox create failed for $($a.Id)" }
-    $list = & $aca -g $rgMain --sandbox-group $sandboxGroup sandbox list -o json 2>$null | ConvertFrom-Json
-    $sbId = ($list | Where-Object { $_.labels.'agent-id' -eq $a.Id } | Select-Object -First 1).id
 
-    Say "Uploading wrapper + bootstrap into sandbox $sbId"
-    & $aca -g $rgMain --sandbox-group $sandboxGroup sandbox fs write `
-      --id $sbId --path /opt/sandbox_wrapper.py --file $wrapperPy 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) { Fail "fs write wrapper failed for $sbId" }
-    & $aca -g $rgMain --sandbox-group $sandboxGroup sandbox fs write `
-      --id $sbId --path /tmp/sandbox-bootstrap.sh --file $bootstrapScript 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) { Fail "fs write bootstrap failed for $sbId" }
-    & $aca -g $rgMain --sandbox-group $sandboxGroup sandbox exec `
-      --id $sbId -c "GH_TOKEN='$GitHubToken' bash /tmp/sandbox-bootstrap.sh" 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) { Fail "bootstrap failed inside sandbox $sbId" }
-    Done "sandbox $sbId bootstrapped"
+    # Snapshot path still needs lifecycle override + port + (possibly) bootstrap
+    # if the snapshot was taken from a clean copilot preset that lacks our wrapper.
+    & $aca -g $rgMain --sandbox-group $sandboxGroup sandbox port add --id $sbId --port 8080 --anonymous 2>&1 | Out-Null
+    & $aca -g $rgMain --sandbox-group $sandboxGroup sandbox lifecycle set --id $sbId --auto-suspend 31536000 --mode Memory 2>&1 | Out-Null
+    & $aca -g $rgMain --sandbox-group $sandboxGroup sandbox resume --id $sbId 2>&1 | Out-Null
+
+    $url = "https://${sbId}--8080.${Location}.adcproxy.io"
+  } else {
+    # Default path: GitHub Copilot preset + MCP connectors. The aca CLI cannot do
+    # this — it requires a data-plane PUT to the sandbox collection endpoint. The
+    # helper also handles port/lifecycle/wrapper bootstrap.
+    Say "Provisioning copilot-preset sandbox for '$($a.Id)' (connectors=$(-not $a.NoConnectors))"
+    $result = & $newSandboxHelper `
+      -AgentId       $a.Id `
+      -ResourceGroup $rgMain `
+      -SandboxGroup  $sandboxGroup `
+      -NoConnectors:$a.NoConnectors `
+      -GitHubToken   $GitHubToken `
+      -Region        $Location
+    if (-not $result -or -not $result.Id) { Fail "New-CopilotSandbox.ps1 failed for $($a.Id)" }
+    $sbId = $result.Id
+    $url  = $result.Url
+    if ($result.Connectors) {
+      Done "sandbox $sbId bootstrapped (connectors: $($result.Connectors -join ', '))"
+    } else {
+      Done "sandbox $sbId bootstrapped (no connectors)"
+    }
   }
 
-  # Expose port 8080 anonymously and lock auto-suspend to ~1 year (effectively always-on).
-  # NOTE: aca CLI uses `--anonymous` (newer flag); older `--auth anonymous` was removed.
-  & $aca -g $rgMain --sandbox-group $sandboxGroup sandbox port add --id $sbId --port 8080 --anonymous 2>&1 | Out-Null
-  & $aca -g $rgMain --sandbox-group $sandboxGroup sandbox lifecycle set --id $sbId --auto-suspend 31536000 --mode Memory 2>&1 | Out-Null
-  & $aca -g $rgMain --sandbox-group $sandboxGroup sandbox resume --id $sbId 2>&1 | Out-Null
-
-  $url = "https://${sbId}--8080.${Location}.adcproxy.io"
   $sandboxUrls[$a.Id] = $url
   Done "sandbox $($a.Id) → $url"
 }
