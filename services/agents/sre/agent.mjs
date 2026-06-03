@@ -15,6 +15,12 @@
 //                       (default: "VoiceConnect")
 //   SRE_TURN_TIMEOUT_MS hard ceiling for one turn (default: 90000)
 //   SRE_SILENCE_MS      idle timeout after first final-answer token (default: 8000)
+//   SRE_VOICE_INSTRUCTION  one-shot style instruction injected on the very first
+//                       turn of each thread (and re-injected on the next turn if
+//                       the previous reply exceeded SRE_VOICE_REINJECT_CHARS).
+//                       Empty string disables the feature.
+//   SRE_VOICE_REINJECT_CHARS  threshold above which we re-inject the voice
+//                       instruction once on the next turn (default: 600).
 //   AUTH_TOKEN          bearer token required on /chat (mirrors sandbox agent)
 //   PORT                listen port (default 8080)
 //
@@ -52,6 +58,11 @@ const SRE_DISPLAY    = process.env.SRE_DISPLAY_NAME || "VoiceConnect";
 const SCOPE          = "https://azuresre.ai/.default";
 const TURN_TIMEOUT   = Number(process.env.SRE_TURN_TIMEOUT_MS || "90000");
 const SILENCE_MS     = Number(process.env.SRE_SILENCE_MS || "30000");
+const VOICE_INSTRUCTION = process.env.SRE_VOICE_INSTRUCTION ??
+  "Reply in 1-2 short spoken sentences suitable for text-to-speech. " +
+  "No markdown, no headings, no bullet lists, no tables, no code blocks, " +
+  "no URLs, no emoji. Speak in plain prose.";
+const VOICE_REINJECT_CHARS = Number(process.env.SRE_VOICE_REINJECT_CHARS || "600");
 const AUTH_TOKEN     = process.env.AUTH_TOKEN || "";
 const PORT           = Number(process.env.PORT || "8080");
 
@@ -151,7 +162,33 @@ function getThread(sessionId) {
 }
 
 function setThread(sessionId, threadId) {
-  threads.set(sessionId, { threadId, lastUsed: Date.now() });
+  threads.set(sessionId, { threadId, lastUsed: Date.now(), lastReplyChars: 0, reinjectNext: false });
+}
+
+function markThreadReply(sessionId, replyChars) {
+  const entry = threads.get(sessionId);
+  if (!entry) return;
+  entry.lastUsed = Date.now();
+  entry.lastReplyChars = replyChars;
+  entry.reinjectNext = replyChars > VOICE_REINJECT_CHARS;
+}
+
+function shouldReinject(sessionId) {
+  const entry = threads.get(sessionId);
+  return !!(entry && entry.reinjectNext);
+}
+
+function clearReinject(sessionId) {
+  const entry = threads.get(sessionId);
+  if (entry) entry.reinjectNext = false;
+}
+
+// Wrap a user message with the voice-style instruction. We tag the
+// instruction with a sentinel comment so it is visible in logs but still
+// reads naturally to the model.
+function withVoiceInstruction(text) {
+  if (!VOICE_INSTRUCTION) return text;
+  return `[Voice mode] ${VOICE_INSTRUCTION}\n\nUser: ${text}`;
 }
 
 setInterval(() => {
@@ -217,6 +254,9 @@ app.post("/chat", async (req, res) => {
     if (kind === "error") ndjson(res, { type: "error", content });
     ndjson(res, { type: "done" });
     res.end();
+    // Record reply length so the next turn can decide whether to re-inject
+    // the voice-style instruction. Only count successful turns.
+    if (kind !== "error") markThreadReply(sessionId, totalFinalChars);
   };
 
   let messageUpdateHandler = null;
@@ -272,7 +312,11 @@ app.post("/chat", async (req, res) => {
       }
     };
 
+    // Register under both casings: ticket-sre emitted "MessageUpdate" (PascalCase),
+    // voiceconnect-sre emits "messageupdate" (lowercase). SignalR JS client matches
+    // method names literally, so we subscribe to both to stay compatible.
     c.on("MessageUpdate", messageUpdateHandler);
+    c.on("messageupdate", messageUpdateHandler);
 
     hardTimer = setTimeout(() => {
       if (!finished) {
@@ -284,26 +328,33 @@ app.post("/chat", async (req, res) => {
     res.on("close", () => {
       // Client disconnected — clean up listener but leave SRE thread intact.
       finished = true;
-      if (messageUpdateHandler) c.off("MessageUpdate", messageUpdateHandler);
+      if (messageUpdateHandler) {
+        c.off("MessageUpdate", messageUpdateHandler);
+        c.off("messageupdate", messageUpdateHandler);
+      }
       if (silenceTimer) clearTimeout(silenceTimer);
       if (hardTimer) clearTimeout(hardTimer);
     });
 
     const existing = getThread(sessionId);
     if (existing) {
+      const reinject = shouldReinject(sessionId);
+      const messageText = reinject ? withVoiceInstruction(text) : text;
+      if (reinject) clearReinject(sessionId);
       await c.invoke(
         "CreateMessage",
         existing.threadId,
-        { text, userId, displayName: SRE_DISPLAY },
+        { text: messageText, userId, displayName: SRE_DISPLAY },
         false,
       );
       existing.lastUsed = Date.now();
     } else {
       const threadId = randomUUID();
+      const startText = withVoiceInstruction(text);
       await c.invoke(
         "CreateThread",
         threadId,
-        { startMessage: { text, userId, displayName: SRE_DISPLAY } },
+        { startMessage: { text: startText, userId, displayName: SRE_DISPLAY } },
         false,
       );
       setThread(sessionId, threadId);
@@ -318,6 +369,7 @@ app.post("/chat", async (req, res) => {
     const cleanup = () => {
       if (messageUpdateHandler && conn) {
         try { conn.off("MessageUpdate", messageUpdateHandler); } catch {}
+        try { conn.off("messageupdate", messageUpdateHandler); } catch {}
       }
       if (silenceTimer) clearTimeout(silenceTimer);
       if (hardTimer) clearTimeout(hardTimer);
