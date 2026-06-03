@@ -40,8 +40,7 @@ function avatarFor(agent: Agent): AvatarChoice {
 }
 
 export function AgentVoiceConnect({ agent, isActive, isSpeaking, isThinking, onClick }: Props) {
-  const color = agent.color || '#6b7280';
-  const doorIcon = isActive ? '🚪' : '🔒';
+  const color = agent.color || '#ffb000';
   const cls = [
     'agent-voiceconnect',
     isActive ? 'active' : '',
@@ -50,16 +49,29 @@ export function AgentVoiceConnect({ agent, isActive, isSpeaking, isThinking, onC
   ].filter(Boolean).join(' ');
   const avatar = avatarFor(agent);
 
+  // Display name conventions for the terminal UI:
+  //   sre → "SRE AGENT", everything else → upper-cased agent name.
+  const displayName = (agent.id?.toLowerCase() === 'sre' ? 'SRE AGENT' : agent.name).toUpperCase();
+
+  // Status line: lock when door closed, otherwise live state. Uppercase only.
+  const statusText = isSpeaking
+    ? '> SPEAKING'
+    : isThinking
+    ? '> THINKING'
+    : isActive
+    ? '> LISTENING'
+    : '🔒 IDLE';
+
   return (
     <div
       className={cls}
       onClick={onClick}
       style={{ '--voiceconnect-color': color } as React.CSSProperties}
-      title={`${agent.name}${isThinking ? ' (thinking...)' : isSpeaking ? ' (speaking)' : ''}`}
+      title={`${displayName}${isThinking ? ' (thinking...)' : isSpeaking ? ' (speaking)' : ''}`}
     >
       <div className="voiceconnect-circle">
         {avatar.kind === 'image' ? (
-          <img className="voiceconnect-avatar-img" src={avatar.src} alt={agent.name} />
+          <img className="voiceconnect-avatar-img" src={avatar.src} alt={displayName} />
         ) : (
           <span className={avatar.kind === 'emoji' ? 'voiceconnect-avatar' : 'voiceconnect-initial'}>
             {avatar.glyph}
@@ -67,10 +79,8 @@ export function AgentVoiceConnect({ agent, isActive, isSpeaking, isThinking, onC
         )}
       </div>
       <div className="voiceconnect-info">
-        <span className="voiceconnect-name">{agent.name}</span>
-        <span className="voiceconnect-status">
-          {doorIcon} {isSpeaking ? 'speaking' : isThinking ? 'thinking' : isActive ? 'listening' : 'idle'}
-        </span>
+        <span className="voiceconnect-name">{displayName}</span>
+        <span className="voiceconnect-status">{statusText}</span>
       </div>
     </div>
   );

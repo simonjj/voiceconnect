@@ -15,7 +15,7 @@ export function Hallway({
   if (agents.length === 0) {
     return (
       <div className="hallway-empty">
-        <p>No agents registered yet.</p>
+        <p>NO AGENTS REGISTERED.</p>
       </div>
     );
   }

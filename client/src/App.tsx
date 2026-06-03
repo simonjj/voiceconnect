@@ -29,25 +29,27 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>🔮 VoiceConnect</h1>
+        <h1>VOICECONNECT TERMINAL V1.0</h1>
         <div className="status">
-          <span className={`dot ${connected ? 'online' : 'offline'}`} />
-          {connected ? 'Connected' : 'Reconnecting...'}
-          {isMicActive && <span className="mic-indicator">🎙️</span>}
-          {hasActive && <span style={{ marginLeft: 12 }}>{activeAgentIds.size} active</span>}
+          <span>
+            <span className={`dot ${connected ? 'online' : 'offline'}`} />{' '}
+            LINK: {connected ? 'CONNECTED' : 'RECONNECTING…'}
+          </span>
+          {isMicActive && <span className="mic-indicator">MIC: ON</span>}
+          {hasActive && <span>{activeAgentIds.size} ACTIVE</span>}
           <button
             className={`mute-button ${muted ? 'muted' : ''}`}
             onClick={() => setMuted((m) => !m)}
             title={muted ? 'Unmute agents' : 'Mute agents'}
             aria-pressed={muted}
           >
-            {muted ? '🔇 Muted' : '🔊 Sound'}
+            [SOUND: {muted ? 'OFF' : 'ON'}]
           </button>
         </div>
       </header>
 
       {error && <div className="error-banner">{error}</div>}
-      {knockStatus && <div className="knock-banner">Knock: {knockStatus}</div>}
+      {knockStatus && <div className="knock-banner">{knockStatus}</div>}
 
       <main className="app-main">
         <Hallway
@@ -67,7 +69,7 @@ function App() {
         />
         {debugMode && debugClips.length > 0 && (
           <section className="debug-clips">
-            <h3>🔍 Audio debug clips ({debugClips.length})</h3>
+            <h3>AUDIO DEBUG CLIPS ({debugClips.length})</h3>
             <ol>
               {debugClips.map((c) => (
                 <li key={c.id}>

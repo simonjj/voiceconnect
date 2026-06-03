@@ -13,13 +13,18 @@ interface Props {
 }
 
 export function AudioSession({ bubbles, mode, autoDegraded, hasActive, onInterrupt, onLeaveAll }: Props) {
+  // Render the mode in uppercase and append the "open an agent door" prompt
+  // when nothing is active. Auto-mode flag stays as a small inline tag.
+  const modeText = (mode || 'unknown').toString().toUpperCase();
+  const titleParts = [
+    `MODE: ${modeText}${autoDegraded ? ' (AUTO)' : ''}`,
+    !hasActive ? 'OPEN AN AGENT DOOR TO START' : null,
+  ].filter(Boolean);
+
   return (
     <div className="audio-session">
       <div className="session-header">
-        <span className="session-title">
-          Mode: {mode}{autoDegraded ? ' (auto)' : ''}
-          {!hasActive && <span className="session-hint"> · Open an agent door to start</span>}
-        </span>
+        <span className="session-title">{titleParts.join(' :: ')}</span>
         <div>
           <button
             className="end-button"
@@ -27,10 +32,10 @@ export function AudioSession({ bubbles, mode, autoDegraded, hasActive, onInterru
             disabled={!hasActive}
             style={{ marginRight: 8 }}
           >
-            Interrupt
+            [INTERRUPT]
           </button>
           <button className="end-button" onClick={onLeaveAll} disabled={!hasActive}>
-            Leave all
+            [LEAVE ALL]
           </button>
         </div>
       </div>
@@ -38,26 +43,42 @@ export function AudioSession({ bubbles, mode, autoDegraded, hasActive, onInterru
         {bubbles.length === 0 && (
           <div className="bubble-empty">
             {hasActive
-              ? 'Listening… start talking when you are ready.'
-              : 'Transcripts and replies will appear here once an agent is active.'}
+              ? 'LISTENING… START TALKING WHEN YOU ARE READY.'
+              : 'TRANSCRIPTS AND REPLIES WILL APPEAR HERE ONCE AN AGENT IS ACTIVE.'}
           </div>
         )}
-        {[...bubbles].reverse().map((b) => (
-          <div
-            key={b.id}
-            className={`bubble ${b.role === 'user' ? 'user-bubble' : 'agent-bubble'}`}
-            style={b.role === 'agent' && b.color ? {
-              borderLeft: `4px solid ${b.color}`,
-              opacity: b.interrupted ? 0.6 : 1,
-            } : undefined}
-          >
-            <span className="bubble-label">
-              {b.role === 'user' ? 'You' : (b.agentName ?? 'Agent')}
-              {b.interrupted ? ' (interrupted)' : ''}
-            </span>
-            <p>{b.text}</p>
-          </div>
-        ))}
+        {[...bubbles].reverse().map((b) => {
+          // Terminal-style speaker label:
+          //   user         → "YOU"
+          //   sre agent    → "SRE_AGENT"
+          //   other agents → upper-cased name (e.g. "ARIA", "NOVA")
+          const speakerLabel =
+            b.role === 'user'
+              ? 'YOU'
+              : (b.agentName ?? 'AGENT')
+                  .toUpperCase()
+                  .replace(/^SRE AGENT$/, 'SRE_AGENT')
+                  .replace(/^SRE$/, 'SRE_AGENT');
+          return (
+            <div
+              key={b.id}
+              className={`bubble ${b.role === 'user' ? 'user-bubble' : 'agent-bubble'}${
+                b.interrupted ? ' interrupted' : ''
+              }`}
+              style={
+                b.role === 'agent' && b.color
+                  ? { opacity: b.interrupted ? 0.6 : 1 }
+                  : undefined
+              }
+            >
+              <span className="bubble-label">
+                {speakerLabel}
+                {b.interrupted ? ' (INTERRUPTED)' : ''}
+              </span>
+              <p>{b.text}</p>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

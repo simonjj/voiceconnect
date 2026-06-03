@@ -1,249 +1,435 @@
+/* ─────────────────────────────────────────────────────────────
+   VOICECONNECT TERMINAL V1.0 — Retro amber CRT styling.
+   Black background, amber monospace, hard rectangles, scanlines.
+   ───────────────────────────────────────────────────────────── */
+
 :root {
-  --bg: #0f0f14;
-  --surface: #1a1a24;
-  --border: #2a2a3a;
-  --text: #e4e4ec;
-  --text-dim: #8888a0;
-  --accent: #6366f1;
-  --green: #4ade80;
-  --red: #ef4444;
+  --term-bg:        #0a0700;
+  --term-panel:     #100a00;
+  --term-amber:     #ffb000;
+  --term-amber-dim: #b27800;
+  --term-amber-low: #553c00;
+  --term-glow:      0 0 4px rgba(255, 176, 0, 0.55);
+  --term-red:       #ff5a3c;
+  --term-green:     #6eff8b;
+  --mono: 'VT323', 'Share Tech Mono', 'IBM Plex Mono', 'Courier New', monospace;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+html, body {
+  background: #000;
+  color: var(--term-amber);
+  font-family: var(--mono);
+  font-size: 18px;
+  letter-spacing: 0.02em;
   min-height: 100vh;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* CRT scanlines + subtle vignette overlay (page-wide). */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.0) 0px,
+      rgba(0, 0, 0, 0.0) 2px,
+      rgba(0, 0, 0, 0.18) 3px,
+      rgba(0, 0, 0, 0.0) 4px
+    );
+  mix-blend-mode: multiply;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1001;
+  background:
+    radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+::selection { background: var(--term-amber); color: var(--term-bg); }
+
+button, input { font: inherit; color: inherit; }
+
+/* ── App shell ─────────────────────────────────────────────── */
 
 .app {
-  max-width: 800px;
+  max-width: 920px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1.5rem 1.25rem 3rem;
+  position: relative;
 }
 
-/* ── Header ─────────────────────────────────────── */
+/* ── Top bar (header) ──────────────────────────────────────── */
 
 .app-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
+  align-items: stretch;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--term-amber);
+  background: var(--term-panel);
+  text-shadow: var(--term-glow);
+  text-transform: uppercase;
+  font-size: 1.05rem;
 }
-.app-header h1 { font-size: 1.5rem; }
-
-.status {
+.app-header h1 {
+  font-size: 1.05rem;
+  font-weight: normal;
+  letter-spacing: 0.08em;
+}
+.app-header .status {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--text-dim);
+  gap: 1.25rem;
+  color: var(--term-amber);
+  font-size: 1.05rem;
+  text-transform: uppercase;
 }
-.dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--red);
+.app-header .dot {
+  width: 8px; height: 8px;
+  background: var(--term-red);
+  border: 1px solid var(--term-red);
+  border-radius: 0;
+  box-shadow: 0 0 6px rgba(255, 90, 60, 0.8);
 }
-.dot.online { background: var(--green); }
-.mic-indicator { font-size: 1rem; }
-
+.app-header .dot.online {
+  background: var(--term-green);
+  border-color: var(--term-green);
+  box-shadow: 0 0 6px rgba(110, 255, 139, 0.7);
+}
+.mic-indicator { font-family: var(--mono); }
 .mute-button {
-  margin-left: 12px;
   background: transparent;
-  color: var(--text-dim);
-  border: 1px solid var(--border);
-  padding: 0.25rem 0.6rem;
-  border-radius: 6px;
+  color: var(--term-amber);
+  border: 1px solid var(--term-amber);
+  padding: 0.1rem 0.6rem;
+  border-radius: 0;
   cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 500;
-  transition: all 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-shadow: var(--term-glow);
 }
-.mute-button:hover { color: var(--text); border-color: var(--text-dim); }
+.mute-button:hover { background: var(--term-amber-low); }
 .mute-button.muted {
-  color: var(--red);
-  border-color: var(--red);
-  background: color-mix(in srgb, var(--red) 12%, transparent);
+  background: var(--term-amber);
+  color: var(--term-bg);
+  text-shadow: none;
 }
 
-/* ── Banners ────────────────────────────────────── */
+/* ── Banners ───────────────────────────────────────────────── */
 
 .error-banner, .knock-banner {
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--term-amber);
+  background: var(--term-panel);
+  text-transform: uppercase;
+  font-size: 0.95rem;
+  text-shadow: var(--term-glow);
 }
 .error-banner {
-  background: #2d1215; color: var(--red); border: 1px solid #5c2328;
+  border-color: var(--term-red);
+  color: var(--term-red);
+  text-shadow: 0 0 4px rgba(255, 90, 60, 0.6);
 }
-.knock-banner {
-  background: #1a1a2e; color: #fbbf24; border: 1px solid #3a3a4e;
-}
+.error-banner::before { content: '!! ERR :: '; }
+.knock-banner::before { content: '>> KNOCK :: '; }
 
-/* ── Hallway ────────────────────────────────────── */
+/* ── Hallway (agent cards) ─────────────────────────────────── */
 
 .hallway {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+@media (max-width: 720px) {
+  .hallway { grid-template-columns: 1fr; }
 }
 
 .hallway-empty {
+  padding: 1rem;
+  border: 1px dashed var(--term-amber-dim);
+  background: var(--term-panel);
   text-align: center;
-  padding: 3rem;
-  color: var(--text-dim);
+  text-transform: uppercase;
+  color: var(--term-amber-dim);
 }
-.hallway-empty code {
-  display: block;
-  margin-top: 0.75rem;
-  background: var(--surface);
-  padding: 0.75rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  text-align: left;
-  white-space: pre;
-  overflow-x: auto;
-}
-.hint { font-size: 0.8rem; margin-top: 0.5rem; }
 
-/* ── Agent Agent ──────────────────────────────────── */
+/* ── Agent persona module ──────────────────────────────────── */
 
 .agent-voiceconnect {
-  display: flex;
-  flex-direction: column;
+  position: relative;
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 0.6rem;
   align-items: center;
+  padding: 0.55rem 0.7rem;
+  background: var(--term-panel);
+  border: 1px solid var(--term-amber);
   cursor: pointer;
-  padding: 1rem;
-  border-radius: 16px;
-  background: var(--surface);
-  border: 2px solid transparent;
-  transition: all 0.2s;
+  text-transform: uppercase;
+  text-shadow: var(--term-glow);
+  transition: background 0.1s linear;
 }
-.agent-voiceconnect:hover {
-  border-color: var(--border);
-  transform: translateY(-2px);
+.agent-voiceconnect::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.0) 0,
+      rgba(0, 0, 0, 0.0) 2px,
+      rgba(0, 0, 0, 0.25) 3px,
+      rgba(0, 0, 0, 0.0) 4px
+    );
 }
+.agent-voiceconnect:hover { background: #1a1100; }
 .agent-voiceconnect.active {
-  border-color: var(--voiceconnect-color, var(--accent));
-  box-shadow: 0 0 20px color-mix(in srgb, var(--voiceconnect-color, var(--accent)) 40%, transparent);
+  border-color: var(--term-amber);
+  background: #1c1300;
+  box-shadow: 0 0 0 1px var(--term-amber-dim) inset;
 }
-/* Halo only while audibly speaking (Q7). */
-.agent-voiceconnect.speaking .voiceconnect-circle {
-  animation: halo 1.5s ease-in-out infinite;
-  box-shadow: 0 0 25px var(--voiceconnect-color), 0 0 45px color-mix(in srgb, var(--voiceconnect-color) 60%, transparent);
+.agent-voiceconnect.speaking {
+  animation: term-blink 1s steps(2, start) infinite;
 }
-.agent-voiceconnect.thinking .voiceconnect-circle {
-  opacity: 0.85;
-  animation: thinking-fade 1.2s ease-in-out infinite;
-}
-@keyframes halo {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.07); }
-}
-@keyframes thinking-fade {
-  0%, 100% { opacity: 0.85; }
-  50% { opacity: 0.55; }
+.agent-voiceconnect.thinking { opacity: 0.85; }
+
+@keyframes term-blink {
+  0%, 100% { box-shadow: 0 0 0 1px var(--term-amber) inset, 0 0 12px rgba(255, 176, 0, 0.5); }
+  50%       { box-shadow: 0 0 0 1px var(--term-amber-dim) inset, 0 0 4px rgba(255, 176, 0, 0.2); }
 }
 
+/* Avatar tile — pixelated, hard-edged amber frame. */
 .voiceconnect-circle {
-  width: 64px; height: 64px; border-radius: 50%;
-  background: var(--voiceconnect-color, #6b7280);
+  width: 64px; height: 64px;
+  background: #000;
+  border: 1px solid var(--term-amber);
+  border-radius: 0;
   display: flex; align-items: center; justify-content: center;
-  margin-bottom: 0.75rem;
-  transition: all 0.3s;
-  box-shadow: 0 0 15px color-mix(in srgb, var(--voiceconnect-color) 40%, transparent);
+  overflow: hidden;
+  position: relative;
 }
-.pulse .voiceconnect-circle {
-  animation: pulse 1.5s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.08); opacity: 0.85; }
-}
-
-.voiceconnect-initial {
-  font-size: 1.5rem; font-weight: 700; color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-.voiceconnect-avatar {
-  font-size: 1.9rem;
-  line-height: 1;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+.voiceconnect-circle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.0) 0,
+      rgba(0, 0, 0, 0.0) 1px,
+      rgba(0, 0, 0, 0.45) 2px,
+      rgba(0, 0, 0, 0.0) 3px
+    );
 }
 .voiceconnect-avatar-img {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
   object-fit: cover;
   display: block;
+  /* Push the avatar into the amber palette. */
+  filter:
+    grayscale(1)
+    contrast(1.25)
+    brightness(0.85)
+    sepia(1)
+    hue-rotate(-15deg)
+    saturate(4);
+  image-rendering: pixelated;
 }
-.voiceconnect-info { text-align: center; }
-.voiceconnect-name { display: block; font-weight: 600; font-size: 0.9rem; }
-.voiceconnect-status {
-  display: block; font-size: 0.75rem; color: var(--text-dim); margin-top: 0.25rem;
+.voiceconnect-initial,
+.voiceconnect-avatar {
+  font-family: var(--mono);
+  font-size: 1.6rem;
+  color: var(--term-amber);
+  text-shadow: var(--term-glow);
 }
 
-/* ── Audio Session ──────────────────────────────── */
+/* Card text block. */
+.voiceconnect-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.voiceconnect-name {
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  color: var(--term-amber);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.voiceconnect-status {
+  font-size: 0.95rem;
+  color: var(--term-amber-dim);
+  letter-spacing: 0.06em;
+}
+
+/* ── Audio session (terminal output window) ────────────────── */
 
 .audio-session {
-  background: var(--surface);
-  border-radius: 16px;
-  padding: 1.5rem;
-  border: 1px solid var(--border);
+  background: var(--term-panel);
+  border: 1px solid var(--term-amber);
+  padding: 0;
+  position: relative;
 }
+.audio-session::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.0) 0px,
+      rgba(0, 0, 0, 0.0) 2px,
+      rgba(0, 0, 0, 0.22) 3px,
+      rgba(0, 0, 0, 0.0) 4px
+    );
+}
+
 .session-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid var(--term-amber-dim);
+  text-transform: uppercase;
+  font-size: 0.95rem;
+  text-shadow: var(--term-glow);
+  position: relative;
+  z-index: 1;
 }
-.session-title { font-weight: 600; }
+.session-title { letter-spacing: 0.06em; }
+.session-hint  { color: var(--term-amber-dim); }
+
 .end-button {
-  background: var(--red); color: white; border: none;
-  padding: 0.5rem 1.25rem; border-radius: 8px;
-  cursor: pointer; font-weight: 500;
-  transition: opacity 0.2s;
+  background: transparent;
+  color: var(--term-amber);
+  border: 1px solid var(--term-amber);
+  border-radius: 0;
+  padding: 0.15rem 0.7rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  text-shadow: var(--term-glow);
 }
-.end-button:hover { opacity: 0.85; }
+.end-button:hover:not(:disabled) {
+  background: var(--term-amber);
+  color: var(--term-bg);
+  text-shadow: none;
+}
 .end-button:disabled {
-  background: #3a3a4e;
-  color: var(--text-dim);
+  border-color: var(--term-amber-low);
+  color: var(--term-amber-low);
   cursor: not-allowed;
-  opacity: 0.7;
+  text-shadow: none;
 }
-.session-hint {
-  margin-left: 0.5rem;
-  font-size: 0.8rem;
-  font-weight: 400;
-  color: var(--text-dim);
+
+/* Output area. */
+.session-content {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  position: relative;
+  z-index: 1;
+  max-height: 60vh;
+  overflow-y: auto;
 }
 .bubble-empty {
-  padding: 1rem;
-  font-size: 0.85rem;
-  color: var(--text-dim);
-  font-style: italic;
-  text-align: center;
+  padding: 0.75rem;
+  color: var(--term-amber-dim);
+  text-transform: uppercase;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
 }
+.bubble-empty::before { content: '> '; }
 
-.session-content {
-  display: flex; flex-direction: column; gap: 0.75rem;
-}
-
+/* Log boxes — agent on the left, user on the right. */
 .bubble {
-  padding: 0.75rem 1rem; border-radius: 12px; max-width: 85%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--term-amber-dim);
+  background: #000;
+  max-width: 85%;
+  border-radius: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 .bubble-label {
-  display: block; font-size: 0.7rem; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.05em;
-  margin-bottom: 0.25rem; color: var(--text-dim);
+  display: block;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--term-amber);
+  text-shadow: var(--term-glow);
+  margin-bottom: 0.15rem;
 }
-.user-bubble { background: #1e293b; align-self: flex-end; }
-.agent-bubble {
-  background: #1a1a2e; align-self: flex-start;
-  border: 1px solid var(--border);
+.bubble p {
+  font-size: 1.05rem;
+  line-height: 1.25;
+  color: var(--term-amber);
+  text-shadow: var(--term-glow);
 }
+.user-bubble {
+  align-self: flex-end;
+  border-color: var(--term-amber);
+  background: #1a1100;
+}
+.user-bubble .bubble-label { color: var(--term-amber); }
+.user-bubble .bubble-label::after { content: ' >'; }
+.agent-bubble { align-self: flex-start; }
+.agent-bubble .bubble-label::before { content: '< '; }
+
+/* Soft "interrupted" treatment — desaturated amber, dashed border. */
+.bubble.interrupted,
+.bubble[style*='opacity: 0.6'] {
+  border-style: dashed;
+}
+
+/* ── Debug clips (dev only) ────────────────────────────────── */
+
+.debug-clips {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border: 1px dashed var(--term-amber-dim);
+  background: var(--term-panel);
+  font-size: 0.9rem;
+}
+.debug-clips h3 {
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+  color: var(--term-amber);
+}
+.debug-clips ol { padding-left: 1.5rem; }
+.debug-clips li { margin-bottom: 0.5rem; }
+.debug-clips a { color: var(--term-amber); text-decoration: underline; }
+
+/* ── Scrollbar (terminal style) ────────────────────────────── */
+
+.session-content::-webkit-scrollbar { width: 10px; }
+.session-content::-webkit-scrollbar-track { background: var(--term-panel); }
+.session-content::-webkit-scrollbar-thumb {
+  background: var(--term-amber-dim);
+  border: 2px solid var(--term-panel);
+}
+.session-content::-webkit-scrollbar-thumb:hover { background: var(--term-amber); }
