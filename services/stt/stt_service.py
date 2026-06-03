@@ -28,6 +28,10 @@ if _ai_conn:
         from azure.monitor.opentelemetry import configure_azure_monitor
         os.environ.setdefault("OTEL_SERVICE_NAME", os.environ.get("AI_CLOUD_ROLE", "orbconnect-stt"))
         configure_azure_monitor(connection_string=_ai_conn)
+        # Silence Azure SDK's HTTP logging — otherwise the exporter's own
+        # POST /v2.1/track requests get re-captured as AppTraces (feedback loop).
+        logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(logging.WARNING)
+        logging.getLogger("azure.monitor.opentelemetry.exporter").setLevel(logging.WARNING)
         logger.info("Application Insights initialized as %s", os.environ["OTEL_SERVICE_NAME"])
     except Exception as e:  # pragma: no cover
         logger.warning("Application Insights init failed: %s", e)
