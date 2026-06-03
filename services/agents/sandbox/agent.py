@@ -109,7 +109,29 @@ async def agent_card():
 
 @app.get("/healthz")
 async def healthz():
-    return {"status": "ok", "agent": AGENT_ID, "sandbox": SANDBOX_ID or None, "sandbox_url": SANDBOX_URL or None}
+    """Liveness for the relay + reachability of the underlying sandbox.
+
+    The server-side HealthMonitor uses sandbox_reachable=false to mark this
+    agent as 'degraded' (relay is up but /chat would 502 because the sandbox
+    is auto-suspended). It still returns HTTP 200 in that case so the relay
+    itself doesn't get rolled by container-app probes.
+    """
+    out: dict = {"status": "ok", "agent": AGENT_ID, "sandbox": SANDBOX_ID or None, "sandbox_url": SANDBOX_URL or None}
+    if not SANDBOX_URL:
+        out["sandbox_reachable"] = False
+        out["sandbox_error"] = "SANDBOX_URL not configured"
+        return out
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            r = await client.get(f"{SANDBOX_URL}/health")
+        out["sandbox_status_code"] = r.status_code
+        out["sandbox_reachable"] = 200 <= r.status_code < 300
+        if not out["sandbox_reachable"]:
+            out["sandbox_error"] = f"HTTP {r.status_code}"
+    except Exception as e:  # noqa: BLE001
+        out["sandbox_reachable"] = False
+        out["sandbox_error"] = str(e)[:200]
+    return out
 
 
 def _build_prompt(req: ChatRequest) -> str:
