@@ -67,6 +67,21 @@ SANDBOX_ID = os.environ.get("SANDBOX_ID", "").strip()
 SANDBOX_URL = os.environ.get("SANDBOX_URL", "").strip().rstrip("/")
 SANDBOX_TIMEOUT = float(os.environ.get("SANDBOX_TIMEOUT", "180"))
 
+# Self-registration: relays POST to {SERVER_URL}/api/agents on startup so the
+# server's agent registry survives a server-pod roll. Idempotent; safe to retry.
+SERVER_URL = os.environ.get("SERVER_URL", "").strip().rstrip("/")
+AGENT_URL = os.environ.get("AGENT_URL", "").strip().rstrip("/")
+if not AGENT_URL:
+    _ca_host = os.environ.get("CONTAINER_APP_HOSTNAME", "").strip()
+    if _ca_host:
+        # CA injects the per-revision FQDN like
+        # "orbconnect-agent-aria-relay--0000004.graygrass-...azurecontainerapps.io".
+        # Strip the "--<revision>" suffix so we register the stable app-level
+        # FQDN that survives revision rolls.
+        import re as _re
+        _ca_host = _re.sub(r"--[^.]+\.", ".", _ca_host, count=1)
+        AGENT_URL = f"https://{_ca_host}"
+
 # Voice-friendly system prompt fragments shared across agents.
 VOICE_GUIDELINES = (
     "Your replies are spoken aloud. Keep them conversational and SHORT — "
@@ -77,6 +92,49 @@ VOICE_GUIDELINES = (
 )
 
 app = FastAPI(title=f"Sandbox Agent: {AGENT_NAME}")
+
+
+async def _self_register() -> None:
+    """POST our agent card to the server's registry. Retries with backoff.
+
+    The server keeps its agent registry on local disk inside the pod, so every
+    server roll wipes it. Each relay re-registers itself on boot to recover.
+    Idempotent on the server side (registerAgent overwrites by id).
+    """
+    if not SERVER_URL:
+        logger.info("SERVER_URL not set; skipping self-registration")
+        return
+    if not AGENT_URL:
+        logger.warning("AGENT_URL not set and CONTAINER_APP_HOSTNAME missing; skipping self-registration")
+        return
+    payload = {
+        "id": AGENT_ID,
+        "name": AGENT_NAME,
+        "url": AGENT_URL,
+        "voice_id": AGENT_VOICE,
+        "color": AGENT_COLOR,
+        "description": AGENT_PERSONA,
+        "capabilities": ["chat"],
+    }
+    delay = 2.0
+    for attempt in range(1, 7):  # ~2+4+8+16+32+60 ≈ 2 min
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                r = await client.post(f"{SERVER_URL}/api/agents", json=payload)
+            if 200 <= r.status_code < 300:
+                logger.info("self-registered as %s at %s (attempt %d)", AGENT_ID, AGENT_URL, attempt)
+                return
+            logger.warning("self-register attempt %d: HTTP %d %s", attempt, r.status_code, r.text[:200])
+        except Exception as e:  # noqa: BLE001
+            logger.warning("self-register attempt %d failed: %s", attempt, e)
+        await asyncio.sleep(delay)
+        delay = min(delay * 2, 60.0)
+    logger.error("self-registration gave up after 6 attempts")
+
+
+@app.on_event("startup")
+async def _on_startup() -> None:
+    asyncio.create_task(_self_register())
 
 
 class HistoryMessage(BaseModel):
