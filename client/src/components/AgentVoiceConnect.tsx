@@ -1,4 +1,4 @@
-import type { Agent } from '../types';
+import type { Agent, AgentHealth } from '../types';
 
 interface Props {
   agent: Agent;
@@ -8,6 +8,9 @@ interface Props {
   isSpeaking: boolean;
   /** Subtle indicator while the agent is generating a response. */
   isThinking: boolean;
+  /** Latest health probe from the server-side HealthMonitor (undefined until
+   *  the first probe lands ~10s after the agent registers). */
+  health?: AgentHealth;
   onClick: () => void;
 }
 
@@ -39,7 +42,7 @@ function avatarFor(agent: Agent): AvatarChoice {
   return { kind: 'initial', glyph: agent.name.charAt(0).toUpperCase() || '?' };
 }
 
-export function AgentVoiceConnect({ agent, isActive, isSpeaking, isThinking, onClick }: Props) {
+export function AgentVoiceConnect({ agent, isActive, isSpeaking, isThinking, health, onClick }: Props) {
   const color = agent.color || '#ffb000';
   const cls = [
     'agent-voiceconnect',
@@ -62,12 +65,20 @@ export function AgentVoiceConnect({ agent, isActive, isSpeaking, isThinking, onC
     ? '> LISTENING'
     : '🔒 DOOR CLOSED';
 
+  // Health dot: 'ok' (green), 'degraded' (amber), 'down' (red), undefined (dim
+  // gray = "no probe yet"). Hovering shows last error / latency in a tooltip.
+  const healthState = health?.state ?? 'unknown';
+  const healthTitle = health
+    ? `health: ${health.state} · ${health.latency_ms}ms${health.last_error ? ` · ${health.last_error}` : ''}`
+    : 'health: probing…';
+  const tileTitle = `${displayName}${isThinking ? ' (thinking...)' : isSpeaking ? ' (speaking)' : ''} — ${healthTitle}`;
+
   return (
     <div
       className={cls}
       onClick={onClick}
       style={{ '--voiceconnect-color': color } as React.CSSProperties}
-      title={`${displayName}${isThinking ? ' (thinking...)' : isSpeaking ? ' (speaking)' : ''}`}
+      title={tileTitle}
     >
       <div className="voiceconnect-circle">
         {avatar.kind === 'image' ? (
@@ -77,6 +88,11 @@ export function AgentVoiceConnect({ agent, isActive, isSpeaking, isThinking, onC
             {avatar.glyph}
           </span>
         )}
+        <span
+          className={`voiceconnect-health-dot health-${healthState}`}
+          aria-label={healthTitle}
+          title={healthTitle}
+        />
       </div>
       <div className="voiceconnect-info">
         <span className="voiceconnect-name">{displayName}</span>

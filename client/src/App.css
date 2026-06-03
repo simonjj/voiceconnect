@@ -236,6 +236,42 @@ button, input { font: inherit; color: inherit; }
       rgba(0, 0, 0, 0.0) 3px
     );
 }
+
+/* Per-agent health dot — small square in the bottom-right of the avatar tile.
+   Driven by the server-side HealthMonitor's /healthz polling. */
+.voiceconnect-health-dot {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 8px;
+  height: 8px;
+  border: 1px solid #000;
+  background: #555;
+  z-index: 2;
+  pointer-events: auto;
+}
+.voiceconnect-health-dot.health-ok {
+  background: #4ade80;
+  box-shadow: 0 0 4px rgba(74, 222, 128, 0.7);
+}
+.voiceconnect-health-dot.health-degraded {
+  background: #fbbf24;
+  box-shadow: 0 0 4px rgba(251, 191, 36, 0.7);
+  animation: term-blink-soft 1.6s ease-in-out infinite;
+}
+.voiceconnect-health-dot.health-down {
+  background: #ef4444;
+  box-shadow: 0 0 4px rgba(239, 68, 68, 0.8);
+  animation: term-blink-soft 1.0s ease-in-out infinite;
+}
+.voiceconnect-health-dot.health-unknown {
+  background: #555;
+  opacity: 0.6;
+}
+@keyframes term-blink-soft {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
 .voiceconnect-avatar-img {
   width: 100%;
   height: 100%;

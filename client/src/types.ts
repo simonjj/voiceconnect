@@ -13,6 +13,13 @@ export interface Agent {
 
 export type ConversationMode = 'addressed-only' | 'addressed-with-fallback' | 'single';
 
+export interface AgentHealth {
+  state: 'ok' | 'degraded' | 'down';
+  latency_ms: number;
+  last_error?: string;
+  checked_at: number;
+}
+
 export type ServerMessage =
   | { type: 'agents'; agents: Agent[] }
   | { type: 'agent_update'; agent: Agent }
@@ -30,6 +37,8 @@ export type ServerMessage =
   | { type: 'error'; message: string }
   | { type: 'tts_config'; sample_rate: number }
   | { type: 'mode'; mode: ConversationMode; auto_degraded: boolean }
+  | { type: 'agents_health'; health: Record<string, AgentHealth> }
+  | { type: 'agent_health'; agent_id: string; health: AgentHealth }
   | { type: 'interrupted'; agent_ids: string[] };
 
 export type ClientMessage =

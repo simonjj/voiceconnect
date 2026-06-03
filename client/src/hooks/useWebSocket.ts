@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { Agent, ServerMessage, ClientMessage, TranscriptBubble, ConversationMode } from '../types';
+import type { Agent, ServerMessage, ClientMessage, TranscriptBubble, ConversationMode, AgentHealth } from '../types';
 
 const WS_URL = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`;
 
@@ -19,6 +19,7 @@ export function useWebSocket(token: string) {
   const [knockStatus, setKnockStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ttsSampleRate, setTtsSampleRate] = useState(24000);
+  const [agentHealth, setAgentHealth] = useState<Record<string, AgentHealth>>({});
   // Debug: capture each agent turn as a downloadable WAV.
   const [debugClips, setDebugClips] = useState<Array<{
     id: string; agentName: string; text: string; sampleRate: number;
@@ -176,6 +177,12 @@ export function useWebSocket(token: string) {
           setKnockStatus(`failed: ${msg.reason}`);
           setTimeout(() => setKnockStatus(null), 3000); break;
         case 'tts_config': setTtsSampleRate(msg.sample_rate); break;
+        case 'agents_health':
+          setAgentHealth(msg.health);
+          break;
+        case 'agent_health':
+          setAgentHealth((prev) => ({ ...prev, [msg.agent_id]: msg.health }));
+          break;
         case 'error':
           setError(msg.message);
           setTimeout(() => setError(null), 5000); break;
@@ -227,6 +234,7 @@ export function useWebSocket(token: string) {
     error,
     ttsSampleRate,
     debugClips,
+    agentHealth,
     sendAudio,
     setAudioCallback,
     toggleAgent,

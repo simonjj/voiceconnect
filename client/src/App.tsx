@@ -11,7 +11,7 @@ const TOKEN = 'dev-token';
 function App() {
   const {
     agents, connected, activeAgentIds, speakingAgentIds, thinkingAgentIds,
-    bubbles, knockStatus, error, ttsSampleRate, debugClips,
+    bubbles, knockStatus, error, ttsSampleRate, debugClips, agentHealth,
     sendAudio, setAudioCallback, toggleAgent, interrupt,
   } = useWebSocket(TOKEN);
 
@@ -57,6 +57,7 @@ function App() {
           activeAgentIds={activeAgentIds}
           speakingAgentIds={speakingAgentIds}
           thinkingAgentIds={thinkingAgentIds}
+          agentHealth={agentHealth}
           onAgentClick={handleAgentClick}
         />
         <AudioSession
