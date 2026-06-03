@@ -1,9 +1,7 @@
-import type { TranscriptBubble, ConversationMode } from '../types';
+import type { TranscriptBubble } from '../types';
 
 interface Props {
   bubbles: TranscriptBubble[];
-  mode: ConversationMode;
-  autoDegraded: boolean;
   /** Whether any agent door is open. Controls enabled/disabled state of the
    *  Interrupt / Leave-all buttons; the panel itself is always rendered so
    *  the prompt window stays visible (Phase 4 fix). */
@@ -12,12 +10,11 @@ interface Props {
   onLeaveAll: () => void;
 }
 
-export function AudioSession({ bubbles, mode, autoDegraded, hasActive, onInterrupt, onLeaveAll }: Props) {
-  // Render the mode in uppercase and append the "open an agent door" prompt
-  // when nothing is active. Auto-mode flag stays as a small inline tag.
-  const modeText = (mode || 'unknown').toString().toUpperCase();
+export function AudioSession({ bubbles, hasActive, onInterrupt, onLeaveAll }: Props) {
+  // Header shows the "open an agent door" prompt only when nothing is active.
+  // The conversation mode used to be displayed here but was removed (phase 7) —
+  // it's an internal detail that doesn't need to be surfaced to the caller.
   const titleParts = [
-    `MODE: ${modeText}${autoDegraded ? ' (AUTO)' : ''}`,
     !hasActive ? 'OPEN AN AGENT DOOR TO START' : null,
   ].filter(Boolean);
 

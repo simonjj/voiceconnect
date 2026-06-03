@@ -60,7 +60,7 @@ export function AgentVoiceConnect({ agent, isActive, isSpeaking, isThinking, onC
     ? '> THINKING'
     : isActive
     ? '> LISTENING'
-    : '🔒 IDLE';
+    : '🔒 DOOR CLOSED';
 
   return (
     <div
