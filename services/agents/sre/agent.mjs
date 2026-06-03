@@ -380,11 +380,69 @@ app.post("/chat", async (req, res) => {
   }
 });
 
+// ───────────────────────── Self-registration ─────────────────────────
+// The server keeps its agent registry in-memory; a server-pod roll wipes it.
+// Re-register on boot so SRE survives without manual intervention. Idempotent
+// on the server side (registerAgent overwrites by id).
+const SERVER_URL = (process.env.SERVER_URL || "").replace(/\/+$/, "");
+let SELF_URL = (process.env.AGENT_URL || "").replace(/\/+$/, "");
+if (!SELF_URL) {
+  const caHost = (process.env.CONTAINER_APP_HOSTNAME || "").trim();
+  if (caHost) {
+    // Strip the per-revision suffix "--<rev>" so we register the stable
+    // app-level FQDN that survives revision rolls.
+    SELF_URL = "https://" + caHost.replace(/--[^.]+\./, ".");
+  }
+}
+
+async function selfRegister() {
+  if (!SERVER_URL) {
+    console.log("[sre-agent] SERVER_URL not set; skipping self-registration");
+    return;
+  }
+  if (!SELF_URL) {
+    console.warn("[sre-agent] AGENT_URL not set and CONTAINER_APP_HOSTNAME missing; skipping self-registration");
+    return;
+  }
+  const payload = {
+    id: AGENT_ID,
+    name: AGENT_NAME,
+    url: SELF_URL,
+    voice_id: AGENT_VOICE,
+    color: AGENT_COLOR,
+    description: AGENT_PERSONA,
+    capabilities: ["chat"],
+  };
+  let delay = 2000;
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    try {
+      const r = await fetch(SERVER_URL + "/api/agents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (r.ok) {
+        console.log(`[sre-agent] self-registered as ${AGENT_ID} at ${SELF_URL} (attempt ${attempt})`);
+        return;
+      }
+      const txt = (await r.text()).slice(0, 200);
+      console.warn(`[sre-agent] self-register attempt ${attempt}: HTTP ${r.status} ${txt}`);
+    } catch (e) {
+      console.warn(`[sre-agent] self-register attempt ${attempt} failed: ${e?.message || e}`);
+    }
+    await new Promise((res) => setTimeout(res, delay));
+    delay = Math.min(delay * 2, 60000);
+  }
+  console.error("[sre-agent] self-registration gave up after 6 attempts");
+}
+
 // ───────────────────────── Bootstrap ─────────────────────────
 app.listen(PORT, () => {
   console.log(`[sre-agent] listening on :${PORT} → ${SRE_ENDPOINT}`);
   // Kick the SignalR connection eagerly so the first turn is fast.
   ensureConnected().catch((e) => console.error("[signalr] initial connect failed:", e?.message || e));
+  // Fire-and-forget self-registration with backoff.
+  selfRegister().catch((e) => console.error("[sre-agent] selfRegister error:", e?.message || e));
 });
 
 process.on("SIGTERM", async () => {
